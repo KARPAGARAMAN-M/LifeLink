@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaHeartbeat, FaEnvelope, FaLock } from 'react-icons/fa';
+import { Heart, Mail, Lock, LogIn, ShieldCheck, HeartHandshake, Sparkles } from 'lucide-react';
+import Input from '../components/common/Input';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
 import toast from 'react-hot-toast';
 
 export default function Login() {
@@ -25,87 +28,128 @@ export default function Login() {
     }
   };
 
-  return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 -z-10" />
+  const setDemoCredentials = (type) => {
+    if (type === 'admin') {
+      setEmail('admin@lifelink.com');
+      setPassword('admin123');
+    } else {
+      setEmail('rahul@example.com');
+      setPassword('password123');
+    }
+  };
 
-      <div className="w-full max-w-md animate-slide-up">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/25">
-            <FaHeartbeat className="text-white text-2xl" />
+  return (
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
+        {/* Left Side: Medical Branding Banner */}
+        <div className="lg:col-span-5 p-8 lg:p-12 bg-gradient-to-br from-red-900 via-red-950 to-slate-950 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="space-y-4 relative z-10">
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-lg">
+                <Heart className="w-5 h-5 fill-current" />
+              </div>
+              <span className="text-xl font-black tracking-tight text-white">
+                Life<span className="text-red-400">Link</span>
+              </span>
+            </Link>
+
+            <div className="pt-8 space-y-3">
+              <h2 className="text-2xl lg:text-3xl font-black tracking-tight leading-tight">
+                Emergency Blood Match System
+              </h2>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Connect with compatible blood donors and broadcast urgent requests instantly across regions.
+              </p>
+            </div>
           </div>
-          <h1 className="text-3xl font-display font-bold text-surface-900 dark:text-white">Welcome Back</h1>
-          <p className="text-surface-500 dark:text-surface-400 mt-2">Sign in to continue to LifeLink</p>
+
+          <div className="pt-8 space-y-3 border-t border-white/10 relative z-10 text-xs text-slate-300">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>JWT Authenticated Session</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <HeartHandshake className="w-4 h-4 text-rose-400" />
+              <span>Verified Donors Network</span>
+            </div>
+          </div>
         </div>
 
-        {/* Form */}
-        <div className="glass-card p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Email Address</label>
-              <div className="relative">
-                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" />
-                <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field !pl-11"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
+        {/* Right Side: Login Form */}
+        <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center space-y-6">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Welcome Back</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Sign in with your credentials to access your LifeLink dashboard.
+            </p>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Password</label>
-              <div className="relative">
-                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" />
-                <input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field !pl-11"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              id="login-email"
+              label="Email Address"
+              type="email"
+              icon={Mail}
+              placeholder="e.g. name@domain.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
-            <button
+            <Input
+              id="login-password"
+              label="Password"
+              type="password"
+              icon={Lock}
+              placeholder="Enter your secret password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <Button
               id="login-submit"
               type="submit"
-              disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2"
+              variant="primary"
+              icon={LogIn}
+              isLoading={loading}
+              className="w-full py-3 font-black text-sm shadow-lg shadow-red-600/30"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                'Sign In'
-              )}
-            </button>
+              Sign In to Account
+            </Button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl">
-            <p className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">Demo Credentials</p>
-            <div className="space-y-1 text-sm">
-              <p className="text-surface-600 dark:text-surface-300">
-                <span className="font-medium">Admin:</span> admin@lifelink.com / admin123
-              </p>
-              <p className="text-surface-600 dark:text-surface-300">
-                <span className="font-medium">User:</span> rahul@example.com / password123
-              </p>
+          {/* Quick Demo Shortcuts */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Quick Demo Fill
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setDemoCredentials('user')}
+                className="py-1.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-red-500 text-slate-700 dark:text-slate-300 font-bold transition-all text-left truncate"
+              >
+                👤 User Demo
+              </button>
+              <button
+                type="button"
+                onClick={() => setDemoCredentials('admin')}
+                className="py-1.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-red-500 text-slate-700 dark:text-slate-300 font-bold transition-all text-left truncate"
+              >
+                👑 Admin Demo
+              </button>
             </div>
           </div>
 
-          <p className="text-center text-sm text-surface-500 dark:text-surface-400 mt-6">
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">
-              Register here
+            <Link to="/register" className="text-red-600 dark:text-red-400 font-bold hover:underline">
+              Create account now
             </Link>
           </p>
         </div>

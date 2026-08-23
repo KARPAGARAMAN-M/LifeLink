@@ -1,6 +1,7 @@
 package com.lifelink.controller;
 
 import com.lifelink.dto.request.BloodRequestCreateDto;
+import com.lifelink.dto.request.EmergencyRequestDto;
 import com.lifelink.dto.response.ApiResponse;
 import com.lifelink.dto.response.BloodRequestResponse;
 import com.lifelink.entity.User;
@@ -25,7 +26,7 @@ public class BloodRequestController {
     private final BloodRequestService bloodRequestService;
 
     /**
-     * Create a new blood request.
+     * Create a new blood request (authenticated).
      */
     @PostMapping
     public ResponseEntity<ApiResponse<BloodRequestResponse>> createRequest(
@@ -34,6 +35,17 @@ public class BloodRequestController {
         BloodRequestResponse response = bloodRequestService.createRequest(user.getId(), dto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Blood request created successfully", response));
+    }
+
+    /**
+     * Create an emergency blood request without login (guest seeker).
+     */
+    @PostMapping("/emergency")
+    public ResponseEntity<ApiResponse<BloodRequestResponse>> createEmergencyRequest(
+            @Valid @RequestBody EmergencyRequestDto dto) {
+        BloodRequestResponse response = bloodRequestService.createEmergencyGuestRequest(dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Emergency blood request dispatched successfully", response));
     }
 
     /**

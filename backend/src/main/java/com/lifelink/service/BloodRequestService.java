@@ -1,12 +1,14 @@
 package com.lifelink.service;
 
 import com.lifelink.dto.request.BloodRequestCreateDto;
+import com.lifelink.dto.request.EmergencyRequestDto;
 import com.lifelink.dto.response.BloodRequestResponse;
 import com.lifelink.entity.BloodRequest;
 import com.lifelink.entity.Donor;
 import com.lifelink.entity.User;
 import com.lifelink.enums.BloodGroup;
 import com.lifelink.enums.RequestStatus;
+import com.lifelink.enums.Role;
 import com.lifelink.enums.Urgency;
 import com.lifelink.exception.ResourceNotFoundException;
 import com.lifelink.exception.UnauthorizedException;
@@ -72,6 +74,65 @@ public class BloodRequestService {
             );
         } catch (Exception e) {
             // Don't fail the request if email fails
+        }
+
+        return mapToResponse(saved);
+    }
+
+    /**
+     * Create an emergency blood request from an unauthenticated guest seeker.
+     */
+    @Transactional
+    public BloodRequestResponse createEmergencyGuestRequest(EmergencyRequestDto dto) {
+        String email = (dto.getRequesterEmail() != null && !dto.getRequesterEmail().trim().isEmpty())
+                ? dto.getRequesterEmail().trim()
+                : "guest_" + System.currentTimeMillis() + "@lifelink.emergency";
+
+        User guestUser = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = User.builder()
+                    .name(dto.getRequesterName())
+                    .email(email)
+                    .password("$2a$10$e8vQyE5KjM/zFv/8Z8G8O.xZg04eW5N8lZg04eW5N8lZg04eW5N8l") // Dummy BCrypt hash
+                    .role(Role.USER)
+                    .isBlocked(false)
+                    .build();
+            return userRepository.save(newUser);
+        });
+
+        Donor donor = donorRepository.findById(dto.getDonorId())
+                .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", dto.getDonorId()));
+
+        BloodGroup bloodGroup = BloodGroup.fromDisplayName(dto.getBloodGroup());
+        Urgency urgency = dto.getUrgency() != null ?
+                Urgency.valueOf(dto.getUrgency().toUpperCase()) : Urgency.CRITICAL;
+
+        String formattedMessage = "Emergency Seeker Contact Phone: " + dto.getRequesterPhone() +
+                (dto.getMessage() != null && !dto.getMessage().isEmpty() ? ("\n" + dto.getMessage()) : "");
+
+        BloodRequest bloodRequest = BloodRequest.builder()
+                .requester(guestUser)
+                .donor(donor)
+                .bloodGroup(bloodGroup)
+                .hospitalName(dto.getHospitalName())
+                .city(dto.getCity())
+                .urgency(urgency)
+                .status(RequestStatus.PENDING)
+                .message(formattedMessage)
+                .build();
+
+        BloodRequest saved = bloodRequestRepository.save(bloodRequest);
+
+        try {
+            emailService.sendBloodRequestNotification(
+                    donor.getUser().getEmail(),
+                    donor.getUser().getName(),
+                    dto.getRequesterName() + " (Phone: " + dto.getRequesterPhone() + ")",
+                    bloodGroup.getDisplayName(),
+                    dto.getHospitalName(),
+                    urgency.name()
+            );
+        } catch (Exception e) {
+            // Log & ignore email error
         }
 
         return mapToResponse(saved);

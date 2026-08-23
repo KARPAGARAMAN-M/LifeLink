@@ -23,11 +23,11 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/search" element={<SearchDonors />} />
+        <Route path="/request-blood/:donorId?" element={<RequestBlood />} />
 
         {/* Protected Routes (Authenticated Users) */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/donor-registration" element={<ProtectedRoute><DonorRegistration /></ProtectedRoute>} />
-        <Route path="/request-blood/:donorId?" element={<ProtectedRoute><RequestBlood /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/request-history" element={<ProtectedRoute><RequestHistory /></ProtectedRoute>} />
 

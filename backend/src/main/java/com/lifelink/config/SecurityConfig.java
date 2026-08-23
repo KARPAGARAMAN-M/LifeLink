@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/donors/search").permitAll()
                         .requestMatchers("/api/donors/{id}").permitAll()
+                        .requestMatchers("/api/requests/emergency").permitAll()
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication

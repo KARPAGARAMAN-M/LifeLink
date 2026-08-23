@@ -1,32 +1,40 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaHeartbeat } from 'react-icons/fa';
+import { Heart, Home, Search } from 'lucide-react';
+import Button from '../components/common/Button';
 
 export default function NotFound() {
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="text-center animate-slide-up">
-        <div className="relative mb-8">
-          <span className="text-[150px] font-display font-extrabold text-surface-100 dark:text-surface-800 select-none">404</span>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950">
+      <div className="text-center space-y-6 max-w-md">
+        <div className="relative">
+          <span className="text-[120px] font-black text-slate-200 dark:text-slate-800 select-none leading-none">
+            404
+          </span>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center shadow-2xl animate-float">
-              <FaHeartbeat className="text-white text-4xl" />
+            <div className="w-20 h-20 bg-red-600 rounded-2xl flex items-center justify-center shadow-xl text-white">
+              <Heart className="w-10 h-10 fill-current animate-pulse" />
             </div>
           </div>
         </div>
 
-        <h1 className="text-3xl font-display font-bold text-surface-900 dark:text-white mb-3">
-          Page Not Found
-        </h1>
-        <p className="text-surface-500 dark:text-surface-400 mb-8 max-w-md mx-auto">
-          Oops! The page you're looking for doesn't exist. It might have been moved or deleted.
-        </p>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Page Not Found</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            The page or route you requested does not exist or has been relocated.
+          </p>
+        </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link to="/" className="btn-primary flex items-center gap-2">
-            🏠 Back to Home
+        <div className="flex justify-center gap-3 pt-2">
+          <Link to="/">
+            <Button size="sm" variant="primary" icon={Home}>
+              Back to Home
+            </Button>
           </Link>
-          <Link to="/search" className="btn-secondary flex items-center gap-2">
-            🔍 Find Donors
+          <Link to="/search">
+            <Button size="sm" variant="secondary" icon={Search}>
+              Find Donors
+            </Button>
           </Link>
         </div>
       </div>

@@ -82,9 +82,10 @@ public class DonorService {
     }
 
     /**
-     * Search donors with optional filters (blood group, city, state).
+     * Search donors with optional filters (blood group, city, state, latitude, longitude, radius).
      */
-    public List<DonorResponse> searchDonors(String bloodGroupStr, String city, String state) {
+    public List<DonorResponse> searchDonors(String bloodGroupStr, String city, String state,
+                                           Double userLat, Double userLon, Double radiusKm) {
         BloodGroup bloodGroup = null;
         if (bloodGroupStr != null && !bloodGroupStr.isEmpty()) {
             bloodGroup = BloodGroup.fromDisplayName(bloodGroupStr);
@@ -94,9 +95,48 @@ public class DonorService {
         String stateParam = (state != null && !state.isEmpty()) ? state : null;
 
         List<Donor> donors = donorRepository.searchDonors(bloodGroup, cityParam, stateParam);
-        return donors.stream()
+
+        List<DonorResponse> responses = donors.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+
+        if (userLat != null && userLon != null) {
+            responses = responses.stream().filter(d -> {
+                if (radiusKm != null && radiusKm > 0) {
+                    if (d.getLatitude() != null && d.getLongitude() != null) {
+                        double dist = calculateHaversineDistance(userLat, userLon, d.getLatitude(), d.getLongitude());
+                        return dist <= radiusKm;
+                    }
+                }
+                return true;
+            }).sorted((d1, d2) -> {
+                // 1. Availability (Available first)
+                if (!d1.getAvailability().equals(d2.getAvailability())) {
+                    return d2.getAvailability().compareTo(d1.getAvailability());
+                }
+                // 2. Distance (Nearest first)
+                if (d1.getLatitude() != null && d1.getLongitude() != null &&
+                    d2.getLatitude() != null && d2.getLongitude() != null) {
+                    double dist1 = calculateHaversineDistance(userLat, userLon, d1.getLatitude(), d1.getLongitude());
+                    double dist2 = calculateHaversineDistance(userLat, userLon, d2.getLatitude(), d2.getLongitude());
+                    return Double.compare(dist1, dist2);
+                }
+                return 0;
+            }).collect(Collectors.toList());
+        }
+
+        return responses;
+    }
+
+    private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Radius of the earth in km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     /**

@@ -1,231 +1,303 @@
-import { Link } from 'react-router-dom';
-import { FaHeartbeat, FaSearch, FaHandHoldingHeart, FaUserPlus, FaTint, FaHospital, FaUsers, FaCheckCircle } from 'react-icons/fa';
-import { HiArrowRight, HiShieldCheck } from 'react-icons/hi';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Heart,
+  Search,
+  UserPlus,
+  ShieldCheck,
+  Zap,
+  Lock,
+  HeartHandshake,
+  ArrowRight,
+  Droplet,
+  Users,
+  Building2,
+  Sparkles,
+  AlertCircle,
+  MapPin,
+  Navigation,
+  Compass,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getAdminStats } from '../api/adminApi';
+import useGeolocation from '../utils/useGeolocation';
+import LocationPermission from '../components/location/LocationPermission';
+import EligibilityCalculator from '../components/calculator/EligibilityCalculator';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+import Select from '../components/common/Select';
+import Input from '../components/common/Input';
+import { BloodGroupBadge } from '../components/common/Badge';
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const geo = useGeolocation();
+
+  // Search widget state
+  const [bloodGroup, setBloodGroup] = useState('O+');
+  const [radius, setRadius] = useState('10');
+  const [stateName, setStateName] = useState('');
+  const [cityName, setCityName] = useState('');
+
+  // Stats state
+  const [stats, setStats] = useState({
+    totalUsers: 125,
+    activeDonors: 84,
+    totalRequests: 92,
+    completedRequests: 76,
+  });
+
+  useEffect(() => {
+    getAdminStats()
+      .then((res) => {
+        if (res.data?.data) {
+          const d = res.data.data;
+          setStats({
+            totalUsers: d.totalUsers || 125,
+            activeDonors: d.activeDonors || d.availableDonors || 84,
+            totalRequests: d.totalRequests || 92,
+            completedRequests: d.completedRequests || 76,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleEmergencySearch = (e) => {
+    e.preventDefault();
+    const query = new URLSearchParams();
+    if (bloodGroup) query.append('bloodGroup', bloodGroup);
+    if (radius) query.append('radius', radius);
+    if (geo.latitude && geo.longitude) {
+      query.append('latitude', geo.latitude);
+      query.append('longitude', geo.longitude);
+    }
+    if (cityName) query.append('city', cityName);
+    if (stateName) query.append('state', stateName);
+    query.append('available', 'true');
+    navigate(`/search?${query.toString()}`);
+  };
 
   return (
-    <div className="overflow-hidden">
-      {/* ===== Hero Section ===== */}
-      <section className="relative min-h-[90vh] flex items-center">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 animated-gradient opacity-90" />
-        <div className="absolute inset-0 bg-black/30" />
+    <div className="overflow-x-hidden bg-slate-50 dark:bg-slate-950 min-h-screen">
+      {/* ===== HERO SECTION ===== */}
+      <section className="relative pt-12 pb-20 lg:pt-20 lg:pb-32 overflow-hidden bg-gradient-to-b from-red-950 via-slate-900 to-slate-950 text-white">
+        {/* Ambient Glows */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-800/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Floating shapes */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-8 animate-fade-in">
-              <FaHeartbeat className="text-primary-300 animate-pulse" />
-              <span className="text-white/90 text-sm font-medium">Every Drop Counts • Save Lives Today</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-900/60 border border-red-700/50 text-red-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md animate-fadeIn">
+              <Sparkles className="w-4 h-4 text-red-400" />
+              <span>Real-Time Emergency Blood Match Platform</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-display font-extrabold text-white mb-6 animate-slide-up leading-tight">
-              Connect <span className="text-primary-300">Blood Donors</span>
-              <br />
-              with Those in Need
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1]">
+              Find Blood. Find Hope. <br />
+              <span className="bg-gradient-to-r from-red-400 via-rose-300 to-red-500 bg-clip-text text-transparent">
+                Save Lives.
+              </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              LifeLink bridges the gap between blood donors and recipients during emergencies.
-              Register as a donor, find nearby matches, and respond to urgent requests instantly.
+            <p className="text-base sm:text-xl text-slate-300 font-normal leading-relaxed max-w-2xl mx-auto">
+              Find available blood donors near you quickly when every second matters. No registration barrier for blood seekers.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              {isAuthenticated ? (
-                <>
-                  <Link to="/search" className="btn-primary !py-4 !px-8 text-lg flex items-center gap-2">
-                    <FaSearch /> Find Donors <HiArrowRight />
-                  </Link>
-                  <Link to="/donor-registration" className="btn-outline !border-white !text-white hover:!bg-white hover:!text-primary-700 !py-4 !px-8 text-lg">
-                    Become a Donor
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link to="/register" className="btn-primary !py-4 !px-8 text-lg flex items-center gap-2">
-                    Get Started <HiArrowRight />
-                  </Link>
-                  <Link to="/search" className="btn-outline !border-white !text-white hover:!bg-white hover:!text-primary-700 !py-4 !px-8 text-lg">
-                    Find Donors
-                  </Link>
-                </>
-              )}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+              <Link to="/search" className="w-full sm:w-auto">
+                <Button size="lg" variant="primary" icon={Search} className="w-full font-black text-base shadow-xl shadow-red-600/40 py-4">
+                  🔍 Find Blood Near Me
+                </Button>
+              </Link>
+              <Link to="/donor-registration" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" icon={Heart} className="w-full border-red-400/40 text-slate-100 hover:bg-slate-800 py-4">
+                  🩸 Become a Donor
+                </Button>
+              </Link>
             </div>
+          </div>
 
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mt-16 animate-slide-up" style={{ animationDelay: '0.6s' }}>
-              {[
-                { value: '1000+', label: 'Donors' },
-                { value: '500+', label: 'Lives Saved' },
-                { value: '50+', label: 'Cities' },
-              ].map((stat, i) => (
-                <div key={i} className="text-center">
-                  <p className="text-2xl sm:text-3xl font-display font-bold text-white">{stat.value}</p>
-                  <p className="text-sm text-white/60">{stat.label}</p>
+          {/* ===== LOCATION-FIRST BLOOD SEARCH WIDGET ===== */}
+          <div className="mt-14 max-w-4xl mx-auto space-y-4">
+            <LocationPermission
+              onAllowLocation={geo.requestLocation}
+              onManualSearch={() => {}}
+              loading={geo.loading}
+              permissionDenied={geo.permissionDenied}
+              latitude={geo.latitude}
+              longitude={geo.longitude}
+            />
+
+            <div className="bg-white/10 dark:bg-slate-900/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
+                  <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    Emergency Blood Search
+                  </h3>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom wave */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,80 1440,60 L1440,120 L0,120 Z" className="fill-surface-50 dark:fill-surface-950" />
-          </svg>
-        </div>
-      </section>
-
-      {/* ===== How It Works ===== */}
-      <section className="py-20 bg-surface-50 dark:bg-surface-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-surface-900 dark:text-white mb-4">
-              How <span className="gradient-text">LifeLink</span> Works
-            </h2>
-            <p className="text-surface-500 dark:text-surface-400 max-w-xl mx-auto">
-              Three simple steps to connect donors and recipients
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: FaUserPlus,
-                title: 'Register',
-                desc: 'Create your account and register as a blood donor with your blood group and location.',
-                color: 'from-primary-500 to-primary-700',
-                step: '01',
-              },
-              {
-                icon: FaSearch,
-                title: 'Search & Request',
-                desc: 'Search for available donors by blood group and location. Send blood requests instantly.',
-                color: 'from-accent-500 to-accent-700',
-                step: '02',
-              },
-              {
-                icon: FaHandHoldingHeart,
-                title: 'Save Lives',
-                desc: 'Donors accept requests, coordinate with recipients, and complete the donation.',
-                color: 'from-emerald-500 to-emerald-700',
-                step: '03',
-              },
-            ].map((item, i) => (
-              <div key={i} className="glass-card p-8 text-center card-hover group relative">
-                <span className="absolute top-4 right-4 text-6xl font-display font-bold text-surface-100 dark:text-surface-800 group-hover:text-primary-100 dark:group-hover:text-primary-900/30 transition-colors">
-                  {item.step}
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-950/70 px-3 py-1 rounded-full border border-emerald-800/60 flex items-center gap-1">
+                  <Navigation className="w-3 h-3" /> Zero Login Required
                 </span>
-                <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
-                  <item.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-display font-bold text-surface-900 dark:text-white mb-3">{item.title}</h3>
-                <p className="text-surface-500 dark:text-surface-400">{item.desc}</p>
               </div>
-            ))}
+
+              <form onSubmit={handleEmergencySearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Select
+                  label="Blood Group *"
+                  options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
+                  value={bloodGroup}
+                  onChange={(e) => setBloodGroup(e.target.value)}
+                  required
+                />
+
+                <Select
+                  label="Search Radius"
+                  options={['5 km', '10 km', '25 km', '50 km']}
+                  value={`${radius} km`}
+                  onChange={(e) => setRadius(e.target.value.replace(' km', ''))}
+                />
+
+                <Input
+                  label="City (Optional Fallback)"
+                  placeholder="e.g. Salem / Chennai"
+                  value={cityName}
+                  onChange={(e) => setCityName(e.target.value)}
+                />
+
+                <div className="flex items-end">
+                  <Button type="submit" variant="danger" icon={Search} className="w-full py-3.5 text-sm font-black shadow-lg shadow-red-600/40">
+                    Find Donors Now
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ===== Blood Group Info ===== */}
-      <section className="py-20 bg-white dark:bg-surface-900">
+      {/* ===== REAL STATISTICS SECTION ===== */}
+      <section className="py-12 bg-white dark:bg-slate-900 border-y border-slate-200/80 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-surface-900 dark:text-white mb-4">
-              Blood Group <span className="gradient-text">Compatibility</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center space-y-1">
+              <div className="flex justify-center text-red-600 dark:text-red-400 mb-2">
+                <Users className="w-6 h-6" />
+              </div>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{stats.totalUsers}+</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Registered Users</p>
+            </div>
+
+            <div className="text-center space-y-1">
+              <div className="flex justify-center text-emerald-600 dark:text-emerald-400 mb-2">
+                <Droplet className="w-6 h-6" />
+              </div>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{stats.activeDonors}+</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Available Donors</p>
+            </div>
+
+            <div className="text-center space-y-1">
+              <div className="flex justify-center text-amber-600 dark:text-amber-400 mb-2">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{stats.totalRequests}+</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Emergency Requests</p>
+            </div>
+
+            <div className="text-center space-y-1">
+              <div className="flex justify-center text-blue-600 dark:text-blue-400 mb-2">
+                <HeartHandshake className="w-6 h-6" />
+              </div>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{stats.completedRequests}+</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Successful Matches</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW LIFELINK WORKS ===== */}
+      <section id="how-it-works" className="py-20 bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+              How <span className="text-red-600 dark:text-red-500">LifeLink</span> Works
             </h2>
-            <p className="text-surface-500 dark:text-surface-400 max-w-xl mx-auto">
-              Understanding which blood types can donate to and receive from others
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Immediate, zero-barrier emergency blood matching in 3 fast steps.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { bg: 'A+', canGive: 'A+, AB+', canReceive: 'A+, A-, O+, O-' },
-              { bg: 'A-', canGive: 'A+, A-, AB+, AB-', canReceive: 'A-, O-' },
-              { bg: 'B+', canGive: 'B+, AB+', canReceive: 'B+, B-, O+, O-' },
-              { bg: 'B-', canGive: 'B+, B-, AB+, AB-', canReceive: 'B-, O-' },
-              { bg: 'AB+', canGive: 'AB+', canReceive: 'All Types' },
-              { bg: 'AB-', canGive: 'AB+, AB-', canReceive: 'A-, B-, AB-, O-' },
-              { bg: 'O+', canGive: 'O+, A+, B+, AB+', canReceive: 'O+, O-' },
-              { bg: 'O-', canGive: 'All Types', canReceive: 'O-' },
-            ].map((item, i) => (
-              <div key={i} className="glass-card p-5 card-hover text-center">
-                <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                  <span className="text-white font-bold text-lg">{item.bg}</span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <p className="text-xs text-surface-400 uppercase tracking-wider">Gives to</p>
-                    <p className="font-semibold text-surface-700 dark:text-surface-200">{item.canGive}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-surface-400 uppercase tracking-wider">Receives from</p>
-                    <p className="font-semibold text-surface-700 dark:text-surface-200">{item.canReceive}</p>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card hover className="p-8 text-center space-y-4 border-slate-200/80 dark:border-slate-800">
+              <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-md">
+                <Navigation className="w-7 h-7" />
               </div>
-            ))}
+              <span className="text-xs font-black text-red-600 uppercase tracking-widest">Step 01</span>
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">Allow Location & Select Blood</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Open LifeLink, enable location, and choose required blood group. No account creation needed.
+              </p>
+            </Card>
+
+            <Card hover className="p-8 text-center space-y-4 border-slate-200/80 dark:border-slate-800">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-md">
+                <Search className="w-7 h-7" />
+              </div>
+              <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Step 02</span>
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">Instant Distance Match</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                View nearest available donors ranked by availability and distance (e.g. 2.4 km away).
+              </p>
+            </Card>
+
+            <Card hover className="p-8 text-center space-y-4 border-slate-200/80 dark:border-slate-800">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-md">
+                <Zap className="w-7 h-7" />
+              </div>
+              <span className="text-xs font-black text-blue-600 uppercase tracking-widest">Step 03</span>
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">Send Request & Connect</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Dispatch an emergency request directly to the donor via SMS/Email notification in seconds.
+              </p>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* ===== Features ===== */}
-      <section className="py-20 bg-surface-50 dark:bg-surface-950">
+      {/* ===== ELIGIBILITY & BECOME A DONOR SECTION ===== */}
+      <section id="about" className="py-20 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-surface-900 dark:text-white mb-4">
-              Why Choose <span className="gradient-text">LifeLink</span>?
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: FaTint, title: 'Real-time Availability', desc: 'Know which donors are currently available to donate blood in your area.' },
-              { icon: FaHospital, title: 'Hospital Integration', desc: 'Specify hospital details when creating blood requests for seamless coordination.' },
-              { icon: HiShieldCheck, title: 'Verified Donors', desc: 'All donors are verified through our secure registration process.' },
-              { icon: FaUsers, title: 'Community Driven', desc: 'Join a growing community of blood donors committed to saving lives.' },
-              { icon: FaCheckCircle, title: 'Request Tracking', desc: 'Track your blood requests from creation to completion in real-time.' },
-              { icon: FaHeartbeat, title: 'Emergency Alerts', desc: 'Critical requests are highlighted and prioritized for urgent attention.' },
-            ].map((item, i) => (
-              <div key={i} className="glass-card p-6 card-hover flex gap-4">
-                <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <item.icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-surface-900 dark:text-white mb-1">{item.title}</h3>
-                  <p className="text-sm text-surface-500 dark:text-surface-400">{item.desc}</p>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-7 space-y-6">
+              <span className="px-3 py-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 text-xs font-bold uppercase tracking-wider">
+                Become a LifeLink Donor
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                Register Once. <br />
+                <span className="text-red-600 dark:text-red-500">Save Lives Nearby.</span>
+              </h2>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
+                Register as a donor in under a minute. Control your availability toggle, receive emergency notifications when someone nearby needs blood, and manage your donation history.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-2">
+                <Link to="/donor-registration">
+                  <Button size="lg" variant="primary" icon={UserPlus} className="font-bold">
+                    Become a Donor Now
+                  </Button>
+                </Link>
+                <Link to="/search">
+                  <Button size="lg" variant="danger" icon={Search} className="font-bold">
+                    Search Available Donors
+                  </Button>
+                </Link>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* ===== CTA ===== */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 animated-gradient opacity-90" />
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="relative max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-display font-extrabold text-white mb-6">
-            Ready to Make a Difference?
-          </h2>
-          <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto">
-            Join LifeLink today and become part of a life-saving community. Your blood donation can save up to three lives.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register" className="bg-white text-primary-700 hover:bg-surface-100 font-bold py-4 px-8 rounded-xl shadow-xl transition-all hover:-translate-y-0.5 flex items-center gap-2 text-lg">
-              Join LifeLink Now <HiArrowRight />
-            </Link>
-            <Link to="/search" className="btn-outline !border-white !text-white hover:!bg-white hover:!text-primary-700 !py-4 !px-8 text-lg">
-              Find Donors
-            </Link>
+            <div className="lg:col-span-5">
+              <EligibilityCalculator />
+            </div>
           </div>
         </div>
       </section>

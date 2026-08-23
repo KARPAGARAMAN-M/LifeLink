@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,25 +13,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <App />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                borderRadius: '12px',
-                background: '#1e293b',
-                color: '#f1f5f9',
-                padding: '16px',
-              },
-              success: {
-                iconTheme: { primary: '#22c55e', secondary: '#f1f5f9' },
-              },
-              error: {
-                iconTheme: { primary: '#ef4444', secondary: '#f1f5f9' },
-              },
-            }}
-          />
+          <NotificationProvider>
+            <App />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  borderRadius: '16px',
+                  background: '#0f172a',
+                  color: '#f8fafc',
+                  padding: '16px',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                },
+                success: {
+                  iconTheme: { primary: '#10b981', secondary: '#f8fafc' },
+                },
+                error: {
+                  iconTheme: { primary: '#ef4444', secondary: '#f8fafc' },
+                },
+              }}
+            />
+          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

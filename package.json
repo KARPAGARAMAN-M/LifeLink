@@ -1,0 +1,17 @@
+{
+  "name": "lifelink",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LifeLink - Blood Donation Management System",
+  "scripts": {
+    "dev": "npx dotenv-cli -e .env -- npx concurrently --kill-others-on-fail -n \"BACKEND,FRONTEND\" -c \"cyan.bold,magenta.bold\" \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && mvn spring-boot:run",
+    "frontend": "cd frontend && npm run dev",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm install && npm run install:frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "dotenv-cli": "^11.0.0"
+  }
+}

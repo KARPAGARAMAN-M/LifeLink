@@ -1,12 +1,30 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import StatsCard from '../components/common/StatsCard';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import { FaUsers, FaTint, FaHandHoldingHeart, FaClock, FaCheckCircle, FaSearch, FaUserPlus } from 'react-icons/fa';
-import { HiArrowRight } from 'react-icons/hi';
-import { STATUS_COLORS, URGENCY_COLORS } from '../utils/constants';
+import { checkDonorStatus, getMyDonorProfile, toggleAvailability } from '../api/donorApi';
+import { getMyRequests, getDonorRequests } from '../api/requestApi';
+import { BloodGroupBadge, StatusBadge, AvailabilityBadge } from '../components/common/Badge';
+import { CardSkeleton } from '../components/common/Skeleton';
+import Card, { CardHeader, CardBody, CardFooter } from '../components/common/Card';
+import Button from '../components/common/Button';
+import {
+  Heart,
+  Droplet,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Search,
+  UserPlus,
+  ArrowRight,
+  ShieldCheck,
+  Calendar,
+  Building2,
+  ToggleLeft,
+  ToggleRight,
+  Activity,
+  HeartPulse,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -15,28 +33,32 @@ export default function Dashboard() {
   const [donorProfile, setDonorProfile] = useState(null);
   const [myRequests, setMyRequests] = useState([]);
   const [donorRequests, setDonorRequests] = useState([]);
+  const [toggling, setToggling] = useState(false);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   const loadDashboard = async () => {
     try {
-      // Check donor status
-      const checkRes = await api.get('/donors/check');
-      const donorStatus = checkRes.data.data;
+      const checkRes = await checkDonorStatus().catch(() => ({ data: { data: false } }));
+      const donorStatus = checkRes.data?.data || false;
       setIsDonor(donorStatus);
 
       if (donorStatus) {
-        const profileRes = await api.get('/donors/my-profile');
-        setDonorProfile(profileRes.data.data);
-        const dReqRes = await api.get('/requests/donor-requests');
-        setDonorRequests(dReqRes.data.data || []);
+        const profileRes = await getMyDonorProfile().catch(() => null);
+        if (profileRes?.data?.data) {
+          setDonorProfile(profileRes.data.data);
+        }
+        const dReqRes = await getDonorRequests().catch(() => ({ data: { data: [] } }));
+        setDonorRequests(dReqRes.data?.data || []);
       }
 
-      // My sent requests
-      const myReqRes = await api.get('/requests/my-requests');
-      setMyRequests(myReqRes.data.data || []);
+      const myReqRes = await getMyRequests().catch(() => ({ data: { data: [] } }));
+      setMyRequests(myReqRes.data?.data || []);
     } catch (err) {
       console.error('Dashboard load error:', err);
     } finally {
@@ -44,120 +66,284 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <LoadingSpinner text="Loading dashboard..." />;
+  useEffect(() => {
+    loadDashboard();
+  }, []);
 
-  const pendingDonorRequests = donorRequests.filter(r => r.status === 'PENDING').length;
-  const completedRequests = [...myRequests, ...donorRequests].filter(r => r.status === 'COMPLETED').length;
+  const handleToggleAvailability = async () => {
+    setToggling(true);
+    try {
+      const res = await toggleAvailability();
+      const newAvail = res.data?.data?.availability;
+      setDonorProfile((prev) => (prev ? { ...prev, availability: newAvail } : prev));
+      toast.success(newAvail ? 'You are now marked as AVAILABLE for blood requests' : 'Status set to UNAVAILABLE');
+    } catch (err) {
+      toast.error('Failed to update availability status');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto py-10 px-4 space-y-6">
+        <CardSkeleton />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // Filter emergency & critical pending requests
+  const criticalPending = donorRequests.filter(
+    (r) => r.status === 'PENDING' && (r.urgency === 'CRITICAL' || r.urgency === 'URGENT')
+  );
+  const pendingCount = donorRequests.filter((r) => r.status === 'PENDING').length;
+  const completedCount = [...myRequests, ...donorRequests].filter((r) => r.status === 'COMPLETED').length;
 
   return (
-    <div className="py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Welcome */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-display font-bold text-surface-900 dark:text-white">
-            Welcome back, <span className="gradient-text">{user?.name}</span> 👋
-          </h1>
-          <p className="text-surface-500 dark:text-surface-400 mt-1">Here's an overview of your LifeLink activity</p>
-        </div>
+    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Welcome Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+              {getTimeGreeting()}, <span className="text-red-600 dark:text-red-500">{user?.name}</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Here's your LifeLink emergency activity overview.
+            </p>
+          </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatsCard icon={FaTint} label="Requests Sent" value={myRequests.length} gradient="from-primary-500 to-primary-700" delay={0} />
-          <StatsCard icon={FaClock} label="Pending" value={pendingDonorRequests} gradient="from-yellow-500 to-orange-500" delay={100} />
-          <StatsCard icon={FaCheckCircle} label="Completed" value={completedRequests} gradient="from-green-500 to-emerald-600" delay={200} />
-          <StatsCard icon={FaHandHoldingHeart} label="Requests Received" value={donorRequests.length} gradient="from-accent-500 to-accent-700" delay={300} />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <Link to="/search" className="glass-card p-5 card-hover flex items-center gap-4 group">
-            <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FaSearch className="text-primary-600 dark:text-primary-400 text-xl" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-surface-900 dark:text-white">Find Donors</h3>
-              <p className="text-sm text-surface-500">Search available donors</p>
-            </div>
-            <HiArrowRight className="text-surface-400 group-hover:text-primary-500 transition-colors" />
-          </Link>
-
-          {!isDonor ? (
-            <Link to="/donor-registration" className="glass-card p-5 card-hover flex items-center gap-4 group">
-              <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FaUserPlus className="text-green-600 dark:text-green-400 text-xl" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-surface-900 dark:text-white">Become a Donor</h3>
-                <p className="text-sm text-surface-500">Register to save lives</p>
-              </div>
-              <HiArrowRight className="text-surface-400 group-hover:text-green-500 transition-colors" />
+          <div className="flex items-center gap-3">
+            <Link to="/request-blood">
+              <Button size="sm" variant="danger" icon={AlertCircle} className="font-extrabold shadow-red-600/30">
+                Create Request
+              </Button>
             </Link>
-          ) : (
-            <div className="glass-card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center">
-                <FaCheckCircle className="text-green-600 dark:text-green-400 text-xl" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-surface-900 dark:text-white">Registered Donor</h3>
-                <p className="text-sm text-surface-500">Blood Group: <strong>{donorProfile?.bloodGroup}</strong> • {donorProfile?.availability ? '🟢 Available' : '🔴 Unavailable'}</p>
-              </div>
-            </div>
-          )}
-
-          <Link to="/request-history" className="glass-card p-5 card-hover flex items-center gap-4 group">
-            <div className="w-12 h-12 bg-accent-50 dark:bg-accent-900/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FaUsers className="text-accent-600 dark:text-accent-400 text-xl" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-surface-900 dark:text-white">Request History</h3>
-              <p className="text-sm text-surface-500">View all requests</p>
-            </div>
-            <HiArrowRight className="text-surface-400 group-hover:text-accent-500 transition-colors" />
-          </Link>
+          </div>
         </div>
 
-        {/* Recent Requests */}
-        {donorRequests.length > 0 && (
-          <div className="glass-card p-6 mb-6">
-            <h2 className="text-xl font-display font-bold text-surface-900 dark:text-white mb-4">Incoming Requests</h2>
-            <div className="space-y-3">
-              {donorRequests.slice(0, 5).map(req => (
-                <div key={req.id} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                      <FaTint className="text-primary-600 dark:text-primary-400" />
+        {/* Top Stat Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-5 border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sent Requests</span>
+              <div className="p-2 rounded-xl bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400">
+                <Droplet className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{myRequests.length}</p>
+            <p className="text-[11px] text-slate-400 mt-1">Total requests dispatched</p>
+          </Card>
+
+          <Card className="p-5 border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Actions</span>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+                <Clock className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{pendingCount}</p>
+            <p className="text-[11px] text-slate-400 mt-1">Awaiting donor response</p>
+          </Card>
+
+          <Card className="p-5 border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Matches Completed</span>
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{completedCount}</p>
+            <p className="text-[11px] text-slate-400 mt-1">Lives impacted</p>
+          </Card>
+
+          {/* Donor status toggle card */}
+          <Card className="p-5 border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Donor Status</span>
+              {donorProfile && <BloodGroupBadge group={donorProfile.bloodGroup} size="sm" />}
+            </div>
+
+            {isDonor ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <AvailabilityBadge available={donorProfile?.availability} />
+                  <button
+                    onClick={handleToggleAvailability}
+                    disabled={toggling}
+                    className="text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 transition-colors"
+                    title="Toggle Availability"
+                  >
+                    {donorProfile?.availability ? (
+                      <ToggleRight className="w-8 h-8 text-emerald-500" />
+                    ) : (
+                      <ToggleLeft className="w-8 h-8 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <Link to="/donor-registration">
+                  <span className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
+                    Register as Donor <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* 🚨 CRITICAL EMERGENCY SECTION */}
+        {criticalPending.length > 0 && (
+          <Card className="p-6 border-red-500/80 bg-red-50/50 dark:bg-red-950/30 shadow-xl space-y-4 animate-pulse-slow">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-300 font-extrabold text-sm">
+                <AlertCircle className="w-5 h-5 text-red-600 animate-bounce" />
+                <span>Urgent Emergency Requests Requiring Your Attention ({criticalPending.length})</span>
+              </div>
+              <Link to="/request-history">
+                <Button size="sm" variant="danger">
+                  Respond Now
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {criticalPending.map((req) => (
+                <div
+                  key={req.id}
+                  className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/60 shadow-sm flex items-center justify-between"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <BloodGroupBadge group={req.bloodGroup} size="sm" />
+                      <StatusBadge urgency={req.urgency} />
                     </div>
-                    <div>
-                      <p className="font-medium text-surface-900 dark:text-white">{req.requesterName}</p>
-                      <p className="text-xs text-surface-500">{req.bloodGroup} • {req.hospitalName}, {req.city}</p>
-                    </div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-1">
+                      {req.hospitalName}, {req.city}
+                    </p>
+                    <p className="text-[11px] text-slate-500">From: {req.requesterName}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={URGENCY_COLORS[req.urgency] || 'badge-normal'}>{req.urgency}</span>
-                    <span className={STATUS_COLORS[req.status] || 'badge-pending'}>{req.status}</span>
-                  </div>
+                  <Link to="/request-history">
+                    <Button size="sm" variant="primary" icon={ArrowRight}>
+                      View
+                    </Button>
+                  </Link>
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
-        {myRequests.length > 0 && (
-          <div className="glass-card p-6">
-            <h2 className="text-xl font-display font-bold text-surface-900 dark:text-white mb-4">My Sent Requests</h2>
-            <div className="space-y-3">
-              {myRequests.slice(0, 5).map(req => (
-                <div key={req.id} className="flex items-center justify-between p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl">
-                  <div>
-                    <p className="font-medium text-surface-900 dark:text-white">To: {req.donorName}</p>
-                    <p className="text-xs text-surface-500">{req.bloodGroup} • {req.hospitalName}</p>
+        {/* Main Content Grid: Activity Timeline & Recommended Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Recent Activity & Requests */}
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="p-6 border-slate-200/80 dark:border-slate-800">
+              <CardHeader
+                title="Recent Request Activity"
+                subtitle="Your latest sent and received blood requests"
+                action={
+                  <Link
+                    to="/request-history"
+                    className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                  >
+                    View All <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                }
+              />
+
+              <div className="space-y-4">
+                {donorRequests.length === 0 && myRequests.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-xs">
+                    No requests recorded yet. Create an emergency blood request or register as a donor.
                   </div>
-                  <span className={STATUS_COLORS[req.status] || 'badge-pending'}>{req.status}</span>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  [...donorRequests, ...myRequests]
+                    .slice(0, 5)
+                    .map((req) => (
+                      <div
+                        key={req.id}
+                        className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <BloodGroupBadge group={req.bloodGroup} size="sm" />
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">
+                              {req.hospitalName}, {req.city}
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              {req.requesterName ? `Requester: ${req.requesterName}` : `Donor: ${req.donorName}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={req.status} />
+                          <StatusBadge urgency={req.urgency} />
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </Card>
           </div>
-        )}
+
+          {/* Right Column: Recommended Actions */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="p-6 border-slate-200/80 dark:border-slate-800 space-y-4">
+              <CardHeader title="Recommended Actions" subtitle="Next steps to keep your account active" />
+
+              {!isDonor && (
+                <div className="p-4 rounded-xl bg-red-50/60 dark:bg-red-950/40 border border-red-200/60 dark:border-red-900/40 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-red-700 dark:text-red-300">
+                    <HeartPulse className="w-4 h-4 text-red-600" />
+                    <span>Become a Registered Donor</span>
+                  </div>
+                  <p className="text-[11px] text-red-600 dark:text-red-400">
+                    Help nearby patients by adding your blood group and location.
+                  </p>
+                  <Link to="/donor-registration" className="inline-block pt-1">
+                    <Button size="sm" variant="danger" icon={UserPlus}>
+                      Register Now
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
+              <Link to="/search" className="block">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 hover:border-red-500/50 transition-all space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Search className="w-4 h-4 text-red-500" /> Find Available Donors
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                  <p className="text-[11px] text-slate-500">Search compatible donors by location.</p>
+                </div>
+              </Link>
+
+              <Link to="/request-blood" className="block">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 hover:border-red-500/50 transition-all space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Droplet className="w-4 h-4 text-red-500" /> Emergency Request
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                  <p className="text-[11px] text-slate-500">Create urgent hospital request for a patient.</p>
+                </div>
+              </Link>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

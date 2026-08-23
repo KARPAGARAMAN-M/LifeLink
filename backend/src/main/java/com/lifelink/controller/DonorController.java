@@ -48,14 +48,17 @@ public class DonorController {
     }
 
     /**
-     * Search donors by blood group, city, state (public endpoint).
+     * Search donors by blood group, city, state, latitude, longitude, radius (public endpoint).
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<DonorResponse>>> searchDonors(
             @RequestParam(required = false) String bloodGroup,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) String state) {
-        List<DonorResponse> donors = donorService.searchDonors(bloodGroup, city, state);
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) Double radius) {
+        List<DonorResponse> donors = donorService.searchDonors(bloodGroup, city, state, latitude, longitude, radius);
         return ResponseEntity.ok(ApiResponse.success("Donors found", donors));
     }
 
