@@ -5,6 +5,7 @@ import com.lifelink.dto.response.DonorResponse;
 import com.lifelink.entity.Donor;
 import com.lifelink.entity.User;
 import com.lifelink.enums.BloodGroup;
+import com.lifelink.enums.VerificationStatus;
 import com.lifelink.exception.DuplicateResourceException;
 import com.lifelink.exception.ResourceNotFoundException;
 import com.lifelink.repository.DonorRepository;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Service for donor registration, profile management, and search operations.
+ * Service for donor registration, profile management, search operations, and verification.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,6 +42,8 @@ public class DonorService {
         }
 
         BloodGroup bloodGroup = BloodGroup.fromDisplayName(request.getBloodGroup());
+        String contactPref = (request.getPreferredContactMethod() != null && !request.getPreferredContactMethod().isEmpty())
+                ? request.getPreferredContactMethod().toUpperCase() : "PHONE";
 
         Donor donor = Donor.builder()
                 .user(user)
@@ -48,6 +51,10 @@ public class DonorService {
                 .city(request.getCity())
                 .state(request.getState())
                 .phone(request.getPhone())
+                .age(request.getAge())
+                .gender(request.getGender())
+                .preferredContactMethod(contactPref)
+                .verificationStatus(VerificationStatus.VERIFIED)
                 .availability(request.getAvailability())
                 .lastDonationDate(request.getLastDonationDate())
                 .latitude(request.getLatitude())
@@ -55,7 +62,7 @@ public class DonorService {
                 .build();
 
         Donor savedDonor = donorRepository.save(donor);
-        return mapToResponse(savedDonor);
+        return mapToResponse(savedDonor, false);
     }
 
     /**
@@ -72,17 +79,33 @@ public class DonorService {
         if (request.getCity() != null) donor.setCity(request.getCity());
         if (request.getState() != null) donor.setState(request.getState());
         if (request.getPhone() != null) donor.setPhone(request.getPhone());
+        if (request.getAge() != null) donor.setAge(request.getAge());
+        if (request.getGender() != null) donor.setGender(request.getGender());
+        if (request.getPreferredContactMethod() != null) donor.setPreferredContactMethod(request.getPreferredContactMethod().toUpperCase());
         if (request.getAvailability() != null) donor.setAvailability(request.getAvailability());
         if (request.getLastDonationDate() != null) donor.setLastDonationDate(request.getLastDonationDate());
         if (request.getLatitude() != null) donor.setLatitude(request.getLatitude());
         if (request.getLongitude() != null) donor.setLongitude(request.getLongitude());
 
         Donor updatedDonor = donorRepository.save(donor);
-        return mapToResponse(updatedDonor);
+        return mapToResponse(updatedDonor, false);
+    }
+
+    /**
+     * Update donor verification status (Admin action).
+     */
+    @Transactional
+    public DonorResponse updateVerificationStatus(Long donorId, VerificationStatus status) {
+        Donor donor = donorRepository.findById(donorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", donorId));
+        donor.setVerificationStatus(status);
+        Donor updated = donorRepository.save(donor);
+        return mapToResponse(updated, false);
     }
 
     /**
      * Search donors with optional filters (blood group, city, state, latitude, longitude, radius).
+     * Masks donor phone numbers in public search results to protect donor privacy.
      */
     public List<DonorResponse> searchDonors(String bloodGroupStr, String city, String state,
                                            Double userLat, Double userLon, Double radiusKm) {
@@ -97,7 +120,7 @@ public class DonorService {
         List<Donor> donors = donorRepository.searchDonors(bloodGroup, cityParam, stateParam);
 
         List<DonorResponse> responses = donors.stream()
-                .map(this::mapToResponse)
+                .map(d -> mapToResponse(d, true))
                 .collect(Collectors.toList());
 
         if (userLat != null && userLon != null) {
@@ -145,7 +168,7 @@ public class DonorService {
     public DonorResponse getDonorById(Long id) {
         Donor donor = donorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", id));
-        return mapToResponse(donor);
+        return mapToResponse(donor, false);
     }
 
     /**
@@ -154,7 +177,7 @@ public class DonorService {
     public DonorResponse getDonorByUserId(Long userId) {
         Donor donor = donorRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Donor profile not found"));
-        return mapToResponse(donor);
+        return mapToResponse(donor, false);
     }
 
     /**
@@ -166,7 +189,7 @@ public class DonorService {
                 .orElseThrow(() -> new ResourceNotFoundException("Donor profile not found"));
         donor.setAvailability(!donor.getAvailability());
         Donor updated = donorRepository.save(donor);
-        return mapToResponse(updated);
+        return mapToResponse(updated, false);
     }
 
     /**
@@ -181,14 +204,23 @@ public class DonorService {
      */
     public List<DonorResponse> getAllDonors() {
         return donorRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::mapToResponse)
+                .map(d -> mapToResponse(d, false))
                 .collect(Collectors.toList());
     }
 
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) return "******";
+        return "******" + phone.substring(phone.length() - 4);
+    }
+
     /**
-     * Map Donor entity to DonorResponse DTO.
+     * Map Donor entity to DonorResponse DTO with optional privacy masking.
      */
-    private DonorResponse mapToResponse(Donor donor) {
+    private DonorResponse mapToResponse(Donor donor, boolean maskPrivacy) {
+        String phoneDisplay = maskPrivacy ? maskPhone(donor.getPhone()) : donor.getPhone();
+        String verStatus = donor.getVerificationStatus() != null ? donor.getVerificationStatus().name() : VerificationStatus.VERIFIED.name();
+        String prefContact = donor.getPreferredContactMethod() != null ? donor.getPreferredContactMethod() : "PHONE";
+
         return DonorResponse.builder()
                 .id(donor.getId())
                 .userId(donor.getUser().getId())
@@ -197,7 +229,11 @@ public class DonorService {
                 .bloodGroup(donor.getBloodGroup().getDisplayName())
                 .city(donor.getCity())
                 .state(donor.getState())
-                .phone(donor.getPhone())
+                .phone(phoneDisplay)
+                .age(donor.getAge())
+                .gender(donor.getGender())
+                .preferredContactMethod(prefContact)
+                .verificationStatus(verStatus)
                 .availability(donor.getAvailability())
                 .lastDonationDate(donor.getLastDonationDate())
                 .latitude(donor.getLatitude())
@@ -206,3 +242,4 @@ public class DonorService {
                 .build();
     }
 }
+

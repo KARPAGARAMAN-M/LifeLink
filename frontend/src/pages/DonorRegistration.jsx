@@ -33,7 +33,11 @@ export default function DonorRegistration() {
     city: '',
     state: '',
     phone: '',
-    availability: true,
+    age: '',
+    gender: 'Unspecified',
+    preferredContactMethod: 'PHONE',
+    availability: false,
+
     lastDonationDate: '',
   });
 
@@ -54,6 +58,7 @@ export default function DonorRegistration() {
     try {
       await registerDonor({
         ...form,
+        age: form.age ? parseInt(form.age, 10) : null,
         lastDonationDate: form.lastDonationDate || null,
       });
       toast.success('Donor registration successful! You are now registered to save lives. 🩸');
@@ -110,6 +115,37 @@ export default function DonorRegistration() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Personal Demographics: Age, Gender, Preferred Contact */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input
+                label="Age (18 - 65)"
+                name="age"
+                type="number"
+                min="18"
+                max="65"
+                placeholder="e.g. 25"
+                value={form.age}
+                onChange={handleChange}
+                required
+              />
+
+              <Select
+                label="Gender"
+                name="gender"
+                options={['Male', 'Female', 'Other', 'Prefer not to say']}
+                value={form.gender}
+                onChange={handleChange}
+              />
+
+              <Select
+                label="Preferred Contact"
+                name="preferredContactMethod"
+                options={['PHONE', 'EMAIL', 'IN_APP']}
+                value={form.preferredContactMethod}
+                onChange={handleChange}
+              />
             </div>
 
             {/* Location Inputs */}
@@ -177,6 +213,7 @@ export default function DonorRegistration() {
                 </div>
               )}
             </div>
+
 
             {/* Initial Availability Checkbox */}
             <div className="flex items-center space-x-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">

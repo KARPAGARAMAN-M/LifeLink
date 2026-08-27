@@ -22,9 +22,14 @@ public class DonorResponse {
     private String city;
     private String state;
     private String phone;
+    private Integer age;
+    private String gender;
+    private String preferredContactMethod;
+    private String verificationStatus;
     private Boolean availability;
     private LocalDate lastDonationDate;
     private Double latitude;
     private Double longitude;
     private LocalDateTime createdAt;
 }
+

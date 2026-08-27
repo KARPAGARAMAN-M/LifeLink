@@ -1,5 +1,7 @@
 package com.lifelink.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -27,6 +29,14 @@ public class DonorRegistrationRequest {
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
     private String phone;
 
+    @Min(value = 18, message = "Donor must be at least 18 years old")
+    @Max(value = 65, message = "Donor must be 65 years old or younger")
+    private Integer age;
+
+    private String gender;
+
+    private String preferredContactMethod; // PHONE, EMAIL, IN_APP
+
     @NotNull(message = "Availability status is required")
     private Boolean availability;
 
@@ -35,3 +45,4 @@ public class DonorRegistrationRequest {
     private Double latitude;
     private Double longitude;
 }
+

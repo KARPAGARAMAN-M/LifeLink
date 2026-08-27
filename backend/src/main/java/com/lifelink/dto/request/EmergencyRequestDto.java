@@ -1,10 +1,13 @@
 package com.lifelink.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 
 /**
  * DTO for emergency blood requests submitted by unauthenticated seekers.
@@ -26,6 +29,13 @@ public class EmergencyRequestDto {
     @NotBlank(message = "City is required")
     private String city;
 
+    @Min(value = 1, message = "At least 1 unit of blood is required")
+    private Integer unitsRequired;
+
+    private String contactNumber;
+
+    private LocalDate requiredDate;
+
     private String urgency; // NORMAL, URGENT, CRITICAL
 
     @NotBlank(message = "Requester name is required")
@@ -38,3 +48,4 @@ public class EmergencyRequestDto {
 
     private String message;
 }
+

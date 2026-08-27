@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -23,9 +24,13 @@ public class BloodRequestResponse {
     private String bloodGroup;
     private String hospitalName;
     private String city;
+    private Integer unitsRequired;
+    private String contactNumber;
+    private LocalDate requiredDate;
     private String urgency;
     private String status;
     private String message;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
+

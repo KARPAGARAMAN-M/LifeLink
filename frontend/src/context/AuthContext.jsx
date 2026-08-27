@@ -52,17 +52,17 @@ export function AuthProvider({ children }) {
     localStorage.setItem('user', JSON.stringify({ ...current, ...updatedUser }));
   };
 
-  const isAdmin = user?.role === 'ADMIN';
   const isAuthenticated = !!token;
 
   return (
     <AuthContext.Provider value={{
-      user, token, loading, isAdmin, isAuthenticated,
+      user, token, loading, isAuthenticated,
       login, register, logout, updateUser
     }}>
       {children}
     </AuthContext.Provider>
   );
+
 }
 
 export function useAuth() {

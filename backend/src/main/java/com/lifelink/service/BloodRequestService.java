@@ -55,6 +55,9 @@ public class BloodRequestService {
                 .bloodGroup(bloodGroup)
                 .hospitalName(dto.getHospitalName())
                 .city(dto.getCity())
+                .unitsRequired(dto.getUnitsRequired() != null ? dto.getUnitsRequired() : 1)
+                .contactNumber(dto.getContactNumber())
+                .requiredDate(dto.getRequiredDate())
                 .urgency(urgency)
                 .status(RequestStatus.PENDING)
                 .message(dto.getMessage())
@@ -115,10 +118,14 @@ public class BloodRequestService {
                 .bloodGroup(bloodGroup)
                 .hospitalName(dto.getHospitalName())
                 .city(dto.getCity())
+                .unitsRequired(dto.getUnitsRequired() != null ? dto.getUnitsRequired() : 1)
+                .contactNumber(dto.getContactNumber() != null ? dto.getContactNumber() : dto.getRequesterPhone())
+                .requiredDate(dto.getRequiredDate())
                 .urgency(urgency)
                 .status(RequestStatus.PENDING)
                 .message(formattedMessage)
                 .build();
+
 
         BloodRequest saved = bloodRequestRepository.save(bloodRequest);
 
@@ -268,6 +275,9 @@ public class BloodRequestService {
                 .bloodGroup(request.getBloodGroup().getDisplayName())
                 .hospitalName(request.getHospitalName())
                 .city(request.getCity())
+                .unitsRequired(request.getUnitsRequired())
+                .contactNumber(request.getContactNumber())
+                .requiredDate(request.getRequiredDate())
                 .urgency(request.getUrgency().name())
                 .status(request.getStatus().name())
                 .message(request.getMessage())
@@ -275,4 +285,5 @@ public class BloodRequestService {
                 .updatedAt(request.getUpdatedAt())
                 .build();
     }
+
 }

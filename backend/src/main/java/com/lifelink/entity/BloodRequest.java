@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -45,6 +46,16 @@ public class BloodRequest {
     @Column(nullable = false, length = 100)
     private String city;
 
+    @Column(name = "units_required")
+    @Builder.Default
+    private Integer unitsRequired = 1;
+
+    @Column(name = "contact_number", length = 20)
+    private String contactNumber;
+
+    @Column(name = "required_date")
+    private LocalDate requiredDate;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -66,3 +77,4 @@ public class BloodRequest {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
+

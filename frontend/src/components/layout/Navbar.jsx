@@ -24,7 +24,8 @@ import {
 import Button from '../common/Button';
 
 export default function Navbar() {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
+
   const { darkMode, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -151,21 +152,8 @@ export default function Navbar() {
                 </Link>
               </>
             )}
-
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                  isActive('/admin')
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40'
-                }`}
-              >
-                <Shield className="w-3.5 h-3.5" />
-                Admin
-              </Link>
-            )}
           </div>
+
 
           {/* Right Action Icons & Primary CTAs */}
           <div className="hidden lg:flex items-center gap-2.5">
@@ -185,12 +173,6 @@ export default function Navbar() {
             <Link to="/search">
               <Button size="sm" variant="danger" icon={Search} className="font-black shadow-lg shadow-red-600/30">
                 Find Blood Near Me
-              </Button>
-            </Link>
-
-            <Link to="/donor-registration">
-              <Button size="sm" variant="outline" icon={Heart} className="font-extrabold border-red-200 text-red-600 dark:border-red-900 dark:text-red-400">
-                Become a Donor
               </Button>
             </Link>
 
@@ -239,11 +221,19 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <Link to="/login" className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1">
+              <Link
+                to="/login"
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                  isActive('/login')
+                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30 font-black'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'
+                }`}
+              >
                 Donor Login
               </Link>
             )}
           </div>
+
 
           {/* Mobile Header Buttons */}
           <div className="flex items-center gap-2 lg:hidden">
@@ -300,14 +290,7 @@ export default function Navbar() {
               >
                 <User className="w-4 h-4 text-red-500" /> My Profile
               </Link>
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40"
-                >
-                  <Shield className="w-4 h-4" /> Admin Panel
-                </Link>
-              )}
+
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
                 <Link to="/request-blood">
                   <Button variant="danger" className="w-full justify-center">

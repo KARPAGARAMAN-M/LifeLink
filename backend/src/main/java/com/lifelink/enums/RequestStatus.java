@@ -6,7 +6,12 @@ package com.lifelink.enums;
  */
 public enum RequestStatus {
     PENDING,
+    MATCHED,
     ACCEPTED,
+    FULFILLED,
     REJECTED,
+    CANCELLED,
+    EXPIRED,
     COMPLETED
 }
+

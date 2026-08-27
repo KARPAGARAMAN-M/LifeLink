@@ -7,6 +7,7 @@ import { calculateDistance, formatDistance } from '../utils/distance';
 import LocationPermission from '../components/location/LocationPermission';
 import NearbyDonorMap from '../components/location/NearbyDonorMap';
 import EmergencyRequestModal from '../components/common/EmergencyRequestModal';
+import ReportModal from '../components/common/ReportModal';
 import { BloodGroupBadge, AvailabilityBadge } from '../components/common/Badge';
 import { CardSkeleton } from '../components/common/Skeleton';
 import EmptyState from '../components/common/EmptyState';
@@ -37,6 +38,8 @@ export default function SearchDonors() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [selectedDonorForRequest, setSelectedDonorForRequest] = useState(null);
+  const [selectedDonorForReport, setSelectedDonorForReport] = useState(null);
+
 
   const [filters, setFilters] = useState({
     bloodGroup: searchParams.get('bloodGroup') || 'O+',
@@ -250,31 +253,41 @@ export default function SearchDonors() {
                       </div>
                     </CardBody>
 
-                    <CardFooter className="pt-2">
+                    <CardFooter className="pt-2 flex gap-2">
                       <Button
                         size="md"
                         variant={donor.availability ? 'danger' : 'secondary'}
                         isDisabled={!donor.availability}
                         icon={HeartHandshake}
                         onClick={() => setSelectedDonorForRequest(donor)}
-                        className="w-full justify-center font-black py-2.5 shadow-md shadow-red-600/30"
+                        className="flex-1 justify-center font-black py-2.5 shadow-md shadow-red-600/30"
                       >
                         Request Blood
                       </Button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDonorForReport(donor)}
+                        className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        title="Report Suspicious Donor"
+                      >
+                        🚩
+                      </button>
                     </CardFooter>
                   </Card>
                 );
               })}
             </div>
           </div>
+
         ) : searched ? (
           <EmptyState
             icon={Search}
-            title="No Compatible Donors Nearby"
-            description="We couldn't find available donors matching your exact location/radius filters."
+            title="No donors found nearby."
+            description="There are currently no available donors matching your search."
             actionText="Broaden Search Filters"
             onAction={handleResetFilters}
           />
+
         ) : null}
       </div>
 
@@ -286,6 +299,17 @@ export default function SearchDonors() {
           onSuccess={() => fetchDonors(filters)}
         />
       )}
+
+      {/* Abuse Report Modal */}
+      {selectedDonorForReport && (
+        <ReportModal
+          targetType="DONOR"
+          targetId={selectedDonorForReport.id}
+          targetName={selectedDonorForReport.name}
+          onClose={() => setSelectedDonorForReport(null)}
+        />
+      )}
     </div>
   );
 }
+

@@ -19,10 +19,11 @@ import {
   Compass,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getAdminStats } from '../api/adminApi';
+import { getPublicStats } from '../api/userApi';
 import useGeolocation from '../utils/useGeolocation';
 import LocationPermission from '../components/location/LocationPermission';
 import EligibilityCalculator from '../components/calculator/EligibilityCalculator';
+import BloodCompatibility from '../components/calculator/BloodCompatibility';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Select from '../components/common/Select';
@@ -40,29 +41,30 @@ export default function Home() {
   const [stateName, setStateName] = useState('');
   const [cityName, setCityName] = useState('');
 
-  // Stats state
+  // Stats state - strictly initialized to 0 for real database counts
   const [stats, setStats] = useState({
-    totalUsers: 125,
-    activeDonors: 84,
-    totalRequests: 92,
-    completedRequests: 76,
+    totalUsers: 0,
+    activeDonors: 0,
+    totalRequests: 0,
+    completedRequests: 0,
   });
 
   useEffect(() => {
-    getAdminStats()
+    getPublicStats()
       .then((res) => {
         if (res.data?.data) {
           const d = res.data.data;
           setStats({
-            totalUsers: d.totalUsers || 125,
-            activeDonors: d.activeDonors || d.availableDonors || 84,
-            totalRequests: d.totalRequests || 92,
-            completedRequests: d.completedRequests || 76,
+            totalUsers: d.totalUsers || 0,
+            activeDonors: d.activeDonors || 0,
+            totalRequests: d.totalRequests || 0,
+            completedRequests: d.completedRequests || 0,
           });
         }
       })
       .catch(() => {});
   }, []);
+
 
   const handleEmergencySearch = (e) => {
     e.preventDefault();
@@ -217,6 +219,13 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ===== BLOOD COMPATIBILITY MODULE ===== */}
+      <section className="py-16 bg-slate-100/70 dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <BloodCompatibility />
+        </div>
+      </section>
+
       {/* ===== HOW LIFELINK WORKS ===== */}
       <section id="how-it-works" className="py-20 bg-slate-50 dark:bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -304,3 +313,4 @@ export default function Home() {
     </div>
   );
 }
+

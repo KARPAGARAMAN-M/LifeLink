@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getUserProfile, updateUserProfile } from '../api/adminApi';
+import { getUserProfile, updateUserProfile } from '../api/userApi';
+
+
 import { getMyDonorProfile, toggleAvailability } from '../api/donorApi';
 import { useAuth } from '../context/AuthContext';
 import { BloodGroupBadge, AvailabilityBadge } from '../components/common/Badge';

@@ -29,15 +29,15 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // Public endpoints (Seeker & Anonymous access)
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/donors/search").permitAll()
                         .requestMatchers("/api/donors/{id}").permitAll()
                         .requestMatchers("/api/requests/emergency").permitAll()
-                        // Admin-only endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // All other endpoints require authentication
+                        // All other endpoints require donor authentication
                         .anyRequest().authenticated()
+
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

@@ -1,10 +1,13 @@
 package com.lifelink.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -23,7 +26,15 @@ public class BloodRequestCreateDto {
     @NotBlank(message = "City is required")
     private String city;
 
+    @Min(value = 1, message = "At least 1 unit of blood is required")
+    private Integer unitsRequired;
+
+    private String contactNumber;
+
+    private LocalDate requiredDate;
+
     private String urgency;
 
     private String message;
 }
+

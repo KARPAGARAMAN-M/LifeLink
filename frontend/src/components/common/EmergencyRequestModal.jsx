@@ -15,6 +15,8 @@ export default function EmergencyRequestModal({ donor, onClose, onSuccess }) {
     bloodGroup: donor ? donor.bloodGroup : 'O+',
     hospitalName: '',
     city: donor ? donor.city : '',
+    unitsRequired: 1,
+    requiredDate: new Date().toISOString().split('T')[0],
     urgency: 'CRITICAL',
     requesterName: '',
     requesterPhone: '',
@@ -44,6 +46,9 @@ export default function EmergencyRequestModal({ donor, onClose, onSuccess }) {
         bloodGroup: form.bloodGroup,
         hospitalName: form.hospitalName,
         city: form.city,
+        unitsRequired: parseInt(form.unitsRequired, 10) || 1,
+        contactNumber: form.requesterPhone,
+        requiredDate: form.requiredDate || null,
         urgency: form.urgency,
         requesterName: form.requesterName,
         requesterPhone: form.requesterPhone,
@@ -125,9 +130,9 @@ export default function EmergencyRequestModal({ donor, onClose, onSuccess }) {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Select
-              label="Blood Group Needed *"
+              label="Blood Group *"
               icon={Droplet}
               name="bloodGroup"
               options={BLOOD_GROUPS}
@@ -136,8 +141,19 @@ export default function EmergencyRequestModal({ donor, onClose, onSuccess }) {
               required
             />
 
+            <Input
+              label="Units Required *"
+              type="number"
+              min="1"
+              max="10"
+              name="unitsRequired"
+              value={form.unitsRequired}
+              onChange={handleChange}
+              required
+            />
+
             <Select
-              label="Urgency Level *"
+              label="Urgency *"
               name="urgency"
               options={URGENCY_LEVELS}
               value={form.urgency}
@@ -168,6 +184,15 @@ export default function EmergencyRequestModal({ donor, onClose, onSuccess }) {
             />
           </div>
 
+          <Input
+            label="Required By Date *"
+            type="date"
+            name="requiredDate"
+            value={form.requiredDate}
+            onChange={handleChange}
+            required
+          />
+
           <div className="space-y-1.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Message / Patient Details (Optional)
@@ -181,6 +206,7 @@ export default function EmergencyRequestModal({ donor, onClose, onSuccess }) {
               className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
+
 
           <div className="pt-2">
             <Button
