@@ -68,9 +68,18 @@ class DonorServiceTest {
                 .longitude(80.2707)
                 .build();
 
-        registrationRequest = new DonorRegistrationRequest(
-                "O+", "Chennai", "Tamil Nadu", "9876543210", 28, "Male", "PHONE", true, null, 13.0827, 80.2707
-        );
+        registrationRequest = DonorRegistrationRequest.builder()
+                .bloodGroup("O+")
+                .city("Chennai")
+                .state("Tamil Nadu")
+                .phone("9876543210")
+                .age(28)
+                .gender("Male")
+                .preferredContactMethod("PHONE")
+                .availability(true)
+                .latitude(13.0827)
+                .longitude(80.2707)
+                .build();
     }
 
     @Test

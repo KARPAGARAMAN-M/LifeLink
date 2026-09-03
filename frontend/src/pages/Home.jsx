@@ -29,6 +29,11 @@ import Card from '../components/common/Card';
 import Select from '../components/common/Select';
 import Input from '../components/common/Input';
 import { BloodGroupBadge } from '../components/common/Badge';
+import AppFlowchart from '../components/common/AppFlowchart';
+import WhyDonate from '../components/educational/WhyDonate';
+import WhoCanDonate from '../components/educational/WhoCanDonate';
+
+
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -146,7 +151,7 @@ export default function Home() {
                 </span>
               </div>
 
-              <form onSubmit={handleEmergencySearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <form id="search-form" onSubmit={handleEmergencySearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Select
                   label="Blood Group *"
                   options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
@@ -177,6 +182,21 @@ export default function Home() {
               </form>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ===== INTERACTIVE SYSTEM FLOWCHART ===== */}
+      <section className="py-8 bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AppFlowchart
+            onSelectBloodGroup={() => {
+              const el = document.getElementById('search-form');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onTriggerLocation={() => {
+              if (geo.requestLocation) geo.requestLocation();
+            }}
+          />
         </div>
       </section>
 
@@ -223,6 +243,14 @@ export default function Home() {
       <section className="py-16 bg-slate-100/70 dark:bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <BloodCompatibility />
+        </div>
+      </section>
+
+      {/* ===== WHY DONATE BLOOD & WHO CAN DONATE ===== */}
+      <section className="py-16 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          <WhyDonate />
+          <WhoCanDonate />
         </div>
       </section>
 

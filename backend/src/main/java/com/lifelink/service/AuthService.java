@@ -79,19 +79,19 @@ public class AuthService {
      * Authenticate user and return JWT token.
      */
     public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmailOrPhone(request.getEmail(), request.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Invalid email/phone or password"));
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
+                            user.getEmail(),
                             request.getPassword()
                     )
             );
         } catch (BadCredentialsException e) {
-            throw new BadCredentialsException("Invalid email or password");
+            throw new BadCredentialsException("Invalid email/phone or password");
         }
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         if (user.getIsBlocked()) {
             throw new BadCredentialsException("Your account has been blocked. Please contact admin.");

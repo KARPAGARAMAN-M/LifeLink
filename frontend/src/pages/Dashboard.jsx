@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { checkDonorStatus, getMyDonorProfile, toggleAvailability } from '../api/donorApi';
 import { getMyRequests, getDonorRequests } from '../api/requestApi';
 import { BloodGroupBadge, StatusBadge, AvailabilityBadge } from '../components/common/Badge';
 import { CardSkeleton } from '../components/common/Skeleton';
-import Card, { CardHeader, CardBody, CardFooter } from '../components/common/Card';
+import Card, { CardHeader } from '../components/common/Card';
 import Button from '../components/common/Button';
 import {
   Heart,
@@ -23,24 +23,25 @@ import {
   ToggleRight,
   Activity,
   HeartPulse,
+  Bell,
+  User,
+  LogOut,
+  MapPin,
+  Settings,
+  FileText,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [isDonor, setIsDonor] = useState(false);
   const [donorProfile, setDonorProfile] = useState(null);
   const [myRequests, setMyRequests] = useState([]);
   const [donorRequests, setDonorRequests] = useState([]);
   const [toggling, setToggling] = useState(false);
-
-  const getTimeGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
 
   const loadDashboard = async () => {
     try {
@@ -76,12 +77,17 @@ export default function Dashboard() {
       const res = await toggleAvailability();
       const newAvail = res.data?.data?.availability;
       setDonorProfile((prev) => (prev ? { ...prev, availability: newAvail } : prev));
-      toast.success(newAvail ? 'You are now marked as AVAILABLE for blood requests' : 'Status set to UNAVAILABLE');
+      toast.success(newAvail ? '🟢 Status set to AVAILABLE' : '🔴 Status set to UNAVAILABLE');
     } catch (err) {
       toast.error('Failed to update availability status');
     } finally {
       setToggling(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   if (loading) {
@@ -98,7 +104,6 @@ export default function Dashboard() {
     );
   }
 
-  // Filter emergency & critical pending requests
   const criticalPending = donorRequests.filter(
     (r) => r.status === 'PENDING' && (r.urgency === 'CRITICAL' || r.urgency === 'URGENT')
   );
@@ -112,10 +117,10 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
           <div>
             <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-              {getTimeGreeting()}, <span className="text-red-600 dark:text-red-500">{user?.name}</span>
+              Welcome, <span className="text-red-600 dark:text-red-500">{user?.name}</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Here's your LifeLink emergency activity overview.
+              Donor Command Center & Emergency Activity Overview
             </p>
           </div>
 
@@ -128,77 +133,116 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Top Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-5 border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Sent Requests</span>
-              <div className="p-2 rounded-xl bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400">
-                <Droplet className="w-5 h-5" />
+        {/* DONOR SPECIFICATION SUMMARY CARD */}
+        {isDonor && donorProfile && (
+          <Card className="p-6 sm:p-8 border-red-500/40 bg-gradient-to-r from-slate-900 via-slate-900 to-red-950 text-white shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-900/60 border border-red-700/50 text-red-300 text-xs font-black uppercase tracking-wider">
+                  <Heart className="w-3.5 h-3.5 fill-current text-red-400" /> Active Donor Profile
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black">Welcome, {donorProfile.name}</h2>
+                <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-300">
+                  <span className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-lg border border-white/10">
+                    <Droplet className="w-3.5 h-3.5 text-red-400" /> Blood Group: <span className="text-red-300 font-black text-sm ml-1">{donorProfile.bloodGroup}</span>
+                  </span>
+                  <span className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-lg border border-white/10">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-400" /> Location: <span className="text-white ml-1">{donorProfile.city}, {donorProfile.state}</span>
+                  </span>
+                  <span className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-lg border border-white/10">
+                    <Calendar className="w-3.5 h-3.5 text-blue-400" /> Last Donation: <span className="text-white ml-1">{donorProfile.lastDonationDate || 'Not recorded'}</span>
+                  </span>
+                </div>
               </div>
-            </div>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{myRequests.length}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Total requests dispatched</p>
-          </Card>
 
-          <Card className="p-5 border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Actions</span>
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{pendingCount}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Awaiting donor response</p>
-          </Card>
-
-          <Card className="p-5 border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Matches Completed</span>
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{completedCount}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Lives impacted</p>
-          </Card>
-
-          {/* Donor status toggle card */}
-          <Card className="p-5 border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Donor Status</span>
-              {donorProfile && <BloodGroupBadge group={donorProfile.bloodGroup} size="sm" />}
-            </div>
-
-            {isDonor ? (
-              <div className="mt-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <AvailabilityBadge available={donorProfile?.availability} />
+              {/* INSTANT AVAILABILITY SWITCH */}
+              <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-2 text-right">
+                <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Donation Availability</p>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-black flex items-center gap-1.5 px-3 py-1 rounded-full ${
+                    donorProfile.availability ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                  }`}>
+                    {donorProfile.availability ? '🟢 AVAILABLE' : '🔴 UNAVAILABLE'}
+                  </span>
                   <button
                     onClick={handleToggleAvailability}
                     disabled={toggling}
-                    className="text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 transition-colors"
-                    title="Toggle Availability"
+                    className="p-1 rounded-xl hover:bg-white/20 transition-all cursor-pointer"
+                    title="Click to Switch Availability Status"
                   >
-                    {donorProfile?.availability ? (
-                      <ToggleRight className="w-8 h-8 text-emerald-500" />
+                    {donorProfile.availability ? (
+                      <ToggleRight className="w-9 h-9 text-emerald-400" />
                     ) : (
-                      <ToggleLeft className="w-8 h-8 text-slate-400" />
+                      <ToggleLeft className="w-9 h-9 text-slate-400" />
                     )}
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="mt-2">
-                <Link to="/donor-registration">
-                  <span className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
-                    Register as Donor <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </Link>
-              </div>
-            )}
+            </div>
+
+            {/* MAIN ACTION BAR BUTTONS */}
+            <div className="pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 relative z-10">
+              <Button
+                variant="outline"
+                size="sm"
+                icon={donorProfile.availability ? ToggleRight : ToggleLeft}
+                onClick={handleToggleAvailability}
+                className="justify-center text-xs font-bold text-white border-white/20 hover:bg-white/10 py-2.5"
+              >
+                Change Availability
+              </Button>
+              <Link to="/request-history">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={FileText}
+                  className="w-full justify-center text-xs font-bold text-white border-white/20 hover:bg-white/10 py-2.5"
+                >
+                  Blood Requests
+                </Button>
+              </Link>
+              <Link to="/request-history">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Clock}
+                  className="w-full justify-center text-xs font-bold text-white border-white/20 hover:bg-white/10 py-2.5"
+                >
+                  Donation History
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={User}
+                  className="w-full justify-center text-xs font-bold text-white border-white/20 hover:bg-white/10 py-2.5"
+                >
+                  My Profile
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Settings}
+                  className="w-full justify-center text-xs font-bold text-white border-white/20 hover:bg-white/10 py-2.5"
+                >
+                  Notification Settings
+                </Button>
+              </Link>
+              <Button
+                variant="danger"
+                size="sm"
+                icon={LogOut}
+                onClick={handleLogout}
+                className="justify-center text-xs font-bold py-2.5"
+              >
+                Logout
+              </Button>
+            </div>
           </Card>
-        </div>
+        )}
 
         {/* 🚨 CRITICAL EMERGENCY SECTION */}
         {criticalPending.length > 0 && (
@@ -242,9 +286,8 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Main Content Grid: Activity Timeline & Recommended Actions */}
+        {/* Requests & Recommended Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Recent Activity & Requests */}
           <div className="lg:col-span-8 space-y-6">
             <Card className="p-6 border-slate-200/80 dark:border-slate-800">
               <CardHeader
@@ -253,7 +296,7 @@ export default function Dashboard() {
                 action={
                   <Link
                     to="/request-history"
-                    className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
                   >
                     View All <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
@@ -263,7 +306,7 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {donorRequests.length === 0 && myRequests.length === 0 ? (
                   <div className="text-center py-8 text-slate-400 text-xs">
-                    No requests recorded yet. Create an emergency blood request or register as a donor.
+                    No active blood requests at the moment. We'll notify you when a matching request is available.
                   </div>
                 ) : (
                   [...donorRequests, ...myRequests]
@@ -296,10 +339,9 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Right Column: Recommended Actions */}
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-6 border-slate-200/80 dark:border-slate-800 space-y-4">
-              <CardHeader title="Recommended Actions" subtitle="Next steps to keep your account active" />
+              <CardHeader title="Quick Actions" subtitle="Platform shortcuts" />
 
               {!isDonor && (
                 <div className="p-4 rounded-xl bg-red-50/60 dark:bg-red-950/40 border border-red-200/60 dark:border-red-900/40 space-y-2">
@@ -308,7 +350,7 @@ export default function Dashboard() {
                     <span>Become a Registered Donor</span>
                   </div>
                   <p className="text-[11px] text-red-600 dark:text-red-400">
-                    Help nearby patients by adding your blood group and location.
+                    Register your blood group and location to save lives nearby.
                   </p>
                   <Link to="/donor-registration" className="inline-block pt-1">
                     <Button size="sm" variant="danger" icon={UserPlus}>
@@ -327,18 +369,6 @@ export default function Dashboard() {
                     <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                   </div>
                   <p className="text-[11px] text-slate-500">Search compatible donors by location.</p>
-                </div>
-              </Link>
-
-              <Link to="/request-blood" className="block">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 hover:border-red-500/50 transition-all space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Droplet className="w-4 h-4 text-red-500" /> Emergency Request
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                  </div>
-                  <p className="text-[11px] text-slate-500">Create urgent hospital request for a patient.</p>
                 </div>
               </Link>
             </Card>

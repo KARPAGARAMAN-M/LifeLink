@@ -38,6 +38,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(length = 20)
+    private String phone;
+
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

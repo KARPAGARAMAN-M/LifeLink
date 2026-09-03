@@ -38,6 +38,11 @@ class BloodRequestServiceTest {
     @Mock
     private DonorRepository donorRepository;
 
+    private NotificationService notificationService = new NotificationService(null) {
+        @Override
+        public void sendDonorEmergencyAlert(Donor donor, Long requestId, String hospitalName, String bloodGroup, Double distanceKm) {}
+    };
+
     private EmailService emailService = new EmailService(null) {
         @Override
         public void sendBloodRequestNotification(String toEmail, String donorName, String requesterName, String bloodGroup, String hospitalName, String urgency) {}

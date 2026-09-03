@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Heart, Mail, Lock, LogIn, ShieldCheck, Users, CheckCircle2 } from 'lucide-react';
+import { Heart, Mail, Lock, LogIn, ShieldCheck, Users, CheckCircle2, UserPlus } from 'lucide-react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
 
 export default function Login() {
-  // Always initialize login fields as empty strings
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Reset form fields explicitly on component mount/page refresh
   useEffect(() => {
     setEmail('');
     setPassword('');
@@ -23,20 +21,18 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Please fill in both email and password.');
+      toast.error('Please enter your email/phone and password.');
       return;
     }
     setLoading(true);
     try {
       const data = await login(email, password);
       toast.success(`Welcome back, ${data.name}!`);
-      // Clear form state before redirecting
       setEmail('');
       setPassword('');
       navigate('/dashboard');
-
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid email or password');
+      toast.error(err.response?.data?.message || 'Invalid email/phone or password');
     } finally {
       setLoading(false);
     }
@@ -45,14 +41,11 @@ export default function Login() {
   return (
     <div className="min-h-[calc(100vh-4rem)] pt-20 pb-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 my-auto">
-
-        {/* Left Branding Section (~45% width on desktop) */}
+        {/* Left Branding Section */}
         <div className="lg:col-span-5 p-8 lg:p-12 bg-gradient-to-br from-red-950 via-slate-900 to-red-900 text-white flex flex-col justify-between relative overflow-hidden">
-          {/* Subtle Ambient Crimson Glow */}
           <div className="absolute top-0 right-0 w-72 h-72 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-rose-800/10 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top Branding Logo */}
           <div className="relative z-10 space-y-6">
             <Link to="/" className="inline-flex items-center gap-3 group">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-700 text-white flex items-center justify-center shadow-lg shadow-red-600/40 group-hover:scale-105 transition-transform">
@@ -68,7 +61,6 @@ export default function Login() {
               </div>
             </Link>
 
-            {/* Core Message */}
             <div className="pt-6 space-y-3">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-900/60 border border-red-700/40 text-red-300 text-xs font-extrabold uppercase tracking-wider">
                 <Heart className="w-3.5 h-3.5 fill-current text-red-400" /> Save Lives Today
@@ -83,7 +75,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Trust Indicators */}
           <div className="pt-8 mt-8 border-t border-white/10 relative z-10 space-y-3">
             <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-200">
               <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -100,50 +91,43 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right Login Section (~55% width on desktop) */}
+        {/* Right Login Section */}
         <div className="lg:col-span-7 p-8 sm:p-12 lg:p-14 flex flex-col justify-center space-y-8 bg-white dark:bg-slate-900">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              Welcome back, Donor
+              Donor Login
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-              Sign in to manage your donor account and help save lives.
+              Sign in using your email address or phone number to manage your donor profile and availability.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} autoComplete="off" className="space-y-5">
-            {/* Dummy hidden inputs to intercept browser password manager auto-fill */}
-            <input type="text" name="fake_username_prevent_autofill" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
-            <input type="password" name="fake_password_prevent_autofill" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
-
             <Input
-              id="login-email"
-              name="donor_email_login"
-              label="Email Address *"
-              type="email"
+              id="ll-donor-login-identifier"
+              name="ll_donor_account_id"
+              label="Email / Phone *"
+              type="text"
               icon={Mail}
-              placeholder="e.g. donor@example.com"
+              placeholder="Enter your registered email or phone number"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-              preventAutofill={true}
               autoComplete="off"
+              required
             />
 
             <Input
-              id="login-password"
-              name="donor_password_login"
+              id="ll-donor-login-secret"
+              name="ll_donor_account_secret"
               label="Password *"
               type="password"
               icon={Lock}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               required
-              preventAutofill={true}
-              autoComplete="new-password"
             />
-
 
             <div className="pt-2">
               <Button
@@ -154,25 +138,25 @@ export default function Login() {
                 isLoading={loading}
                 className="w-full py-3.5 font-black text-sm shadow-xl shadow-red-600/30 justify-center rounded-xl"
               >
-                Sign In
+                LOGIN
               </Button>
             </div>
           </form>
 
-          {/* Registration Link Footer */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="text-red-600 dark:text-red-400 font-extrabold hover:text-red-700 dark:hover:text-red-300 hover:underline transition-colors"
+          {/* Registration CTA Footer */}
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-center space-y-3">
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-extrabold">New donor?</p>
+            <Link to="/donor-registration" className="block w-full">
+              <Button
+                variant="outline"
+                icon={UserPlus}
+                className="w-full justify-center py-3 text-red-600 border-red-500/40 dark:text-red-400 font-black hover:bg-red-50 dark:hover:bg-red-950/30"
               >
-                Become a donor
-              </Link>
-            </p>
+                REGISTER AS A DONOR
+              </Button>
+            </Link>
           </div>
         </div>
-
       </div>
     </div>
   );

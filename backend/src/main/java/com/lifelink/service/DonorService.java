@@ -5,15 +5,19 @@ import com.lifelink.dto.response.DonorResponse;
 import com.lifelink.entity.Donor;
 import com.lifelink.entity.User;
 import com.lifelink.enums.BloodGroup;
+import com.lifelink.enums.Role;
 import com.lifelink.enums.VerificationStatus;
 import com.lifelink.exception.DuplicateResourceException;
 import com.lifelink.exception.ResourceNotFoundException;
 import com.lifelink.repository.DonorRepository;
 import com.lifelink.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,36 +30,64 @@ public class DonorService {
 
     private final DonorRepository donorRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
-     * Register the currently authenticated user as a donor.
+     * Register a donor. If userId is provided, links to existing User; otherwise creates new User + Donor atomically.
      */
     @Transactional
     public DonorResponse registerDonor(Long userId, DonorRegistrationRequest request) {
-        // Check if user exists
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-
-        // Check if already registered as donor
-        if (donorRepository.existsByUserId(userId)) {
-            throw new DuplicateResourceException("You are already registered as a donor");
+        User user;
+        if (userId != null) {
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+            if (donorRepository.existsByUserId(userId)) {
+                throw new DuplicateResourceException("You are already registered as a donor");
+            }
+        } else {
+            // New user registration flow
+            if (request.getEmail() == null || request.getEmail().isBlank()) {
+                throw new IllegalArgumentException("Email is required for registration");
+            }
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new DuplicateResourceException("An account with this email already exists. Please log in first.");
+            }
+            user = User.builder()
+                    .name(request.getName() != null ? request.getName() : "Anonymous Donor")
+                    .email(request.getEmail())
+                    .password(passwordEncoder.encode(request.getPassword() != null ? request.getPassword() : "DefaultPassword123"))
+                    .phone(request.getPhone())
+                    .role(Role.USER)
+                    .isBlocked(false)
+                    .build();
+            user = userRepository.save(user);
         }
 
         BloodGroup bloodGroup = BloodGroup.fromDisplayName(request.getBloodGroup());
         String contactPref = (request.getPreferredContactMethod() != null && !request.getPreferredContactMethod().isEmpty())
                 ? request.getPreferredContactMethod().toUpperCase() : "PHONE";
 
+        // Calculate age from DOB if DOB provided
+        Integer calculatedAge = request.getAge();
+        if (request.getDob() != null) {
+            calculatedAge = Period.between(request.getDob(), LocalDate.now()).getYears();
+        }
+
         Donor donor = Donor.builder()
                 .user(user)
                 .bloodGroup(bloodGroup)
                 .city(request.getCity())
+                .district(request.getDistrict())
                 .state(request.getState())
+                .pincode(request.getPincode())
                 .phone(request.getPhone())
-                .age(request.getAge())
+                .dob(request.getDob())
+                .age(calculatedAge)
                 .gender(request.getGender())
                 .preferredContactMethod(contactPref)
                 .verificationStatus(VerificationStatus.VERIFIED)
-                .availability(request.getAvailability())
+                .availability(request.getAvailability() != null ? request.getAvailability() : true)
+                .screeningAnswers(request.getScreeningAnswers())
                 .lastDonationDate(request.getLastDonationDate())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
@@ -77,9 +109,16 @@ public class DonorService {
             donor.setBloodGroup(BloodGroup.fromDisplayName(request.getBloodGroup()));
         }
         if (request.getCity() != null) donor.setCity(request.getCity());
+        if (request.getDistrict() != null) donor.setDistrict(request.getDistrict());
         if (request.getState() != null) donor.setState(request.getState());
+        if (request.getPincode() != null) donor.setPincode(request.getPincode());
         if (request.getPhone() != null) donor.setPhone(request.getPhone());
-        if (request.getAge() != null) donor.setAge(request.getAge());
+        if (request.getDob() != null) {
+            donor.setDob(request.getDob());
+            donor.setAge(Period.between(request.getDob(), LocalDate.now()).getYears());
+        } else if (request.getAge() != null) {
+            donor.setAge(request.getAge());
+        }
         if (request.getGender() != null) donor.setGender(request.getGender());
         if (request.getPreferredContactMethod() != null) donor.setPreferredContactMethod(request.getPreferredContactMethod().toUpperCase());
         if (request.getAvailability() != null) donor.setAvailability(request.getAvailability());
@@ -92,7 +131,29 @@ public class DonorService {
     }
 
     /**
-     * Update donor verification status (Admin action).
+     * Save FCM push notification token.
+     */
+    @Transactional
+    public void saveFcmToken(Long userId, String token) {
+        Donor donor = donorRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Donor profile not found"));
+        donor.setFcmToken(token);
+        donorRepository.save(donor);
+    }
+
+    /**
+     * Save notification preferences.
+     */
+    @Transactional
+    public void updateNotificationPreferences(Long userId, String preferencesJson) {
+        Donor donor = donorRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Donor profile not found"));
+        donor.setNotificationPreferences(preferencesJson);
+        donorRepository.save(donor);
+    }
+
+    /**
+     * Update donor verification status.
      */
     @Transactional
     public DonorResponse updateVerificationStatus(Long donorId, VerificationStatus status) {
@@ -133,11 +194,9 @@ public class DonorService {
                 }
                 return true;
             }).sorted((d1, d2) -> {
-                // 1. Availability (Available first)
                 if (!d1.getAvailability().equals(d2.getAvailability())) {
                     return d2.getAvailability().compareTo(d1.getAvailability());
                 }
-                // 2. Distance (Nearest first)
                 if (d1.getLatitude() != null && d1.getLongitude() != null &&
                     d2.getLatitude() != null && d2.getLongitude() != null) {
                     double dist1 = calculateHaversineDistance(userLat, userLon, d1.getLatitude(), d1.getLongitude());
@@ -152,7 +211,7 @@ public class DonorService {
     }
 
     private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // Radius of the earth in km
+        final int R = 6371; // Earth radius in KM
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
@@ -162,27 +221,18 @@ public class DonorService {
         return R * c;
     }
 
-    /**
-     * Get a specific donor by ID.
-     */
     public DonorResponse getDonorById(Long id) {
         Donor donor = donorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", id));
         return mapToResponse(donor, false);
     }
 
-    /**
-     * Get donor profile for the authenticated user.
-     */
     public DonorResponse getDonorByUserId(Long userId) {
         Donor donor = donorRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Donor profile not found"));
         return mapToResponse(donor, false);
     }
 
-    /**
-     * Toggle donor availability status.
-     */
     @Transactional
     public DonorResponse toggleAvailability(Long userId) {
         Donor donor = donorRepository.findByUserId(userId)
@@ -192,16 +242,10 @@ public class DonorService {
         return mapToResponse(updated, false);
     }
 
-    /**
-     * Check if user is registered as a donor.
-     */
     public boolean isDonor(Long userId) {
         return donorRepository.existsByUserId(userId);
     }
 
-    /**
-     * Get all donors (for admin).
-     */
     public List<DonorResponse> getAllDonors() {
         return donorRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(d -> mapToResponse(d, false))
@@ -215,6 +259,7 @@ public class DonorService {
 
     /**
      * Map Donor entity to DonorResponse DTO with optional privacy masking.
+     * Mask privacy removes sensitive health screening answers, FCM token, and masks phone numbers for public users.
      */
     private DonorResponse mapToResponse(Donor donor, boolean maskPrivacy) {
         String phoneDisplay = maskPrivacy ? maskPhone(donor.getPhone()) : donor.getPhone();
@@ -225,16 +270,22 @@ public class DonorService {
                 .id(donor.getId())
                 .userId(donor.getUser().getId())
                 .name(donor.getUser().getName())
-                .email(donor.getUser().getEmail())
+                .email(maskPrivacy ? null : donor.getUser().getEmail()) // Privacy protection
                 .bloodGroup(donor.getBloodGroup().getDisplayName())
                 .city(donor.getCity())
+                .district(donor.getDistrict())
                 .state(donor.getState())
+                .pincode(maskPrivacy ? null : donor.getPincode())
                 .phone(phoneDisplay)
+                .dob(maskPrivacy ? null : donor.getDob())
                 .age(donor.getAge())
                 .gender(donor.getGender())
                 .preferredContactMethod(prefContact)
                 .verificationStatus(verStatus)
                 .availability(donor.getAvailability())
+                .fcmToken(maskPrivacy ? null : donor.getFcmToken())
+                .screeningAnswers(maskPrivacy ? null : donor.getScreeningAnswers())
+                .notificationPreferences(maskPrivacy ? null : donor.getNotificationPreferences())
                 .lastDonationDate(donor.getLastDonationDate())
                 .latitude(donor.getLatitude())
                 .longitude(donor.getLongitude())
@@ -242,4 +293,3 @@ public class DonorService {
                 .build();
     }
 }
-

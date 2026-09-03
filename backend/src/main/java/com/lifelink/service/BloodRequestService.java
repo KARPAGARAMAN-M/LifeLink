@@ -33,6 +33,7 @@ public class BloodRequestService {
     private final UserRepository userRepository;
     private final DonorRepository donorRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     /**
      * Create a new blood request from the authenticated user to a specific donor.
@@ -64,6 +65,13 @@ public class BloodRequestService {
                 .build();
 
         BloodRequest saved = bloodRequestRepository.save(bloodRequest);
+
+        // Dispatch FCM Push & In-App notification
+        try {
+            notificationService.sendDonorEmergencyAlert(donor, saved.getId(), dto.getHospitalName(), bloodGroup.getDisplayName(), null);
+        } catch (Exception e) {
+            // Ignore notification errors
+        }
 
         // Send email notification to donor
         try {
@@ -128,6 +136,12 @@ public class BloodRequestService {
 
 
         BloodRequest saved = bloodRequestRepository.save(bloodRequest);
+
+        try {
+            notificationService.sendDonorEmergencyAlert(donor, saved.getId(), dto.getHospitalName(), bloodGroup.getDisplayName(), null);
+        } catch (Exception e) {
+            // Ignore notification errors
+        }
 
         try {
             emailService.sendBloodRequestNotification(

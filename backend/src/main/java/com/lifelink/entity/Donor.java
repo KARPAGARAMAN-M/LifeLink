@@ -37,11 +37,20 @@ public class Donor {
     @Column(nullable = false, length = 100)
     private String city;
 
+    @Column(length = 100)
+    private String district;
+
     @Column(nullable = false, length = 100)
     private String state;
 
+    @Column(length = 10)
+    private String pincode;
+
     @Column(nullable = false, length = 15)
     private String phone;
+
+    @Column
+    private LocalDate dob;
 
     @Column
     private Integer age;
@@ -62,6 +71,14 @@ public class Donor {
     @Column(nullable = false)
     private Boolean availability = false;
 
+    @Column(name = "fcm_token", columnDefinition = "TEXT")
+    private String fcmToken;
+
+    @Column(name = "screening_answers", columnDefinition = "TEXT")
+    private String screeningAnswers;
+
+    @Column(name = "notification_preferences", columnDefinition = "TEXT")
+    private String notificationPreferences;
 
     @Column(name = "last_donation_date")
     private LocalDate lastDonationDate;

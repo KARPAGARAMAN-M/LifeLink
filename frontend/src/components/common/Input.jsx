@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export default function Input({
   label,
@@ -9,21 +9,9 @@ export default function Input({
   className = '',
   id,
   required = false,
-  preventAutofill = false,
-  onFocus,
   ...props
 }) {
   const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
-  const [readOnly, setReadOnly] = useState(preventAutofill);
-
-  const handleFocus = (e) => {
-    if (preventAutofill) {
-      setReadOnly(false);
-    }
-    if (onFocus) {
-      onFocus(e);
-    }
-  };
 
   return (
     <div className="w-full space-y-1.5">
@@ -42,8 +30,6 @@ export default function Input({
           id={inputId}
           type={type}
           required={required}
-          readOnly={readOnly}
-          onFocus={handleFocus}
           className={`w-full px-4 py-2.5 ${Icon ? 'pl-10' : ''} bg-slate-50 dark:bg-slate-900/90 border ${
             error
               ? 'border-red-500 focus:ring-red-500 focus:border-red-500'

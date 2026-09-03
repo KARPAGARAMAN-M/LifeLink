@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controller for donor-related operations: registration, update, search.
+ * Controller for donor-related operations: registration, update, search, FCM push tokens.
  */
 @RestController
 @RequestMapping("/api/donors")
@@ -25,15 +25,49 @@ public class DonorController {
     private final DonorService donorService;
 
     /**
-     * Register the authenticated user as a blood donor.
+     * Register a donor (authenticated or public guest onboarding).
      */
     @PostMapping
     public ResponseEntity<ApiResponse<DonorResponse>> registerDonor(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody DonorRegistrationRequest request) {
-        DonorResponse response = donorService.registerDonor(user.getId(), request);
+        Long userId = user != null ? user.getId() : null;
+        DonorResponse response = donorService.registerDonor(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Donor registration successful", response));
+    }
+
+    /**
+     * Public standalone endpoint for donor registration.
+     */
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<DonorResponse>> registerDonorPublic(
+            @Valid @RequestBody DonorRegistrationRequest request) {
+        DonorResponse response = donorService.registerDonor(null, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Donor registration successful", response));
+    }
+
+    /**
+     * Save FCM push notification token.
+     */
+    @PostMapping("/fcm-token")
+    public ResponseEntity<ApiResponse<String>> saveFcmToken(
+            @AuthenticationPrincipal User user,
+            @RequestBody String token) {
+        donorService.saveFcmToken(user.getId(), token);
+        return ResponseEntity.ok(ApiResponse.success("FCM notification token saved", "SUCCESS"));
+    }
+
+    /**
+     * Update notification preferences.
+     */
+    @PutMapping("/notification-preferences")
+    public ResponseEntity<ApiResponse<String>> updatePreferences(
+            @AuthenticationPrincipal User user,
+            @RequestBody String preferencesJson) {
+        donorService.updateNotificationPreferences(user.getId(), preferencesJson);
+        return ResponseEntity.ok(ApiResponse.success("Notification preferences updated", "SUCCESS"));
     }
 
     /**
