@@ -15,9 +15,11 @@ import java.time.LocalDateTime;
 public class BloodRequestResponse {
 
     private Long id;
+    private String requestCode;
     private Long requesterId;
     private String requesterName;
     private String requesterEmail;
+    private String requesterPhone;
     private Long donorId;
     private String donorName;
     private String donorPhone;

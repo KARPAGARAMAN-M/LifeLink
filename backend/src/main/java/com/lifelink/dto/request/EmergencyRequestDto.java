@@ -29,12 +29,16 @@ public class EmergencyRequestDto {
     @NotBlank(message = "City is required")
     private String city;
 
+    private String state;
+
     @Min(value = 1, message = "At least 1 unit of blood is required")
     private Integer unitsRequired;
 
     private String contactNumber;
 
     private LocalDate requiredDate;
+
+    private String requiredTime;
 
     private String urgency; // NORMAL, URGENT, CRITICAL
 

@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -93,47 +94,49 @@ public class BloodRequestService {
     /**
      * Create an emergency blood request from an unauthenticated guest seeker.
      */
+    /**
+     * Create an emergency or guest blood request from an unauthenticated seeker.
+     */
     @Transactional
     public BloodRequestResponse createEmergencyGuestRequest(EmergencyRequestDto dto) {
-        String email = (dto.getRequesterEmail() != null && !dto.getRequesterEmail().trim().isEmpty())
-                ? dto.getRequesterEmail().trim()
-                : "guest_" + System.currentTimeMillis() + "@lifelink.emergency";
-
-        User guestUser = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = User.builder()
-                    .name(dto.getRequesterName())
-                    .email(email)
-                    .password("$2a$10$e8vQyE5KjM/zFv/8Z8G8O.xZg04eW5N8lZg04eW5N8lZg04eW5N8l") // Dummy BCrypt hash
-                    .role(Role.USER)
-                    .isBlocked(false)
-                    .build();
-            return userRepository.save(newUser);
-        });
-
-        Donor donor = donorRepository.findById(dto.getDonorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", dto.getDonorId()));
+        // Find targeted donor or default first active donor
+        Donor donor;
+        if (dto.getDonorId() != null) {
+            donor = donorRepository.findById(dto.getDonorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", dto.getDonorId()));
+        } else {
+            List<Donor> activeDonors = donorRepository.findAllByOrderByCreatedAtDesc();
+            if (activeDonors.isEmpty()) {
+                throw new ResourceNotFoundException("No active donors found in network.");
+            }
+            donor = activeDonors.get(0);
+        }
 
         BloodGroup bloodGroup = BloodGroup.fromDisplayName(dto.getBloodGroup());
         Urgency urgency = dto.getUrgency() != null ?
                 Urgency.valueOf(dto.getUrgency().toUpperCase()) : Urgency.CRITICAL;
 
-        String formattedMessage = "Emergency Seeker Contact Phone: " + dto.getRequesterPhone() +
+        String formattedMessage = "Requester Contact Phone: " + dto.getRequesterPhone() +
                 (dto.getMessage() != null && !dto.getMessage().isEmpty() ? ("\n" + dto.getMessage()) : "");
 
+        String generatedCode = "LL-REQ-" + (10000 + (int)(Math.random() * 90000));
+
         BloodRequest bloodRequest = BloodRequest.builder()
-                .requester(guestUser)
+                .requestCode(generatedCode)
                 .donor(donor)
+                .requesterName(dto.getRequesterName())
+                .requesterPhone(dto.getRequesterPhone())
+                .requesterEmail(dto.getRequesterEmail())
                 .bloodGroup(bloodGroup)
                 .hospitalName(dto.getHospitalName())
                 .city(dto.getCity())
                 .unitsRequired(dto.getUnitsRequired() != null ? dto.getUnitsRequired() : 1)
                 .contactNumber(dto.getContactNumber() != null ? dto.getContactNumber() : dto.getRequesterPhone())
-                .requiredDate(dto.getRequiredDate())
+                .requiredDate(dto.getRequiredDate() != null ? dto.getRequiredDate() : LocalDate.now())
                 .urgency(urgency)
                 .status(RequestStatus.PENDING)
                 .message(formattedMessage)
                 .build();
-
 
         BloodRequest saved = bloodRequestRepository.save(bloodRequest);
 
@@ -157,6 +160,39 @@ public class BloodRequestService {
         }
 
         return mapToResponse(saved);
+    }
+
+    /**
+     * Track request status using requestCode and phone number.
+     */
+    public BloodRequestResponse trackRequest(String requestCode, String phone) {
+        BloodRequest request;
+        if (requestCode != null && requestCode.startsWith("LL-REQ-")) {
+            request = bloodRequestRepository.findByRequestCode(requestCode.trim())
+                    .orElseThrow(() -> new ResourceNotFoundException("Blood request not found with Code: " + requestCode));
+        } else {
+            try {
+                Long id = Long.parseLong(requestCode.trim().replaceAll("[^0-9]", ""));
+                request = bloodRequestRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Blood request not found with ID: " + requestCode));
+            } catch (Exception e) {
+                throw new ResourceNotFoundException("Invalid Request ID format.");
+            }
+        }
+
+        // Validate phone
+        if (phone != null && !phone.trim().isEmpty()) {
+            String inputPhone = phone.trim().replaceAll("[^0-9]", "");
+            String reqPhone = request.getRequesterPhone() != null ? request.getRequesterPhone().replaceAll("[^0-9]", "") : "";
+            String contactPhone = request.getContactNumber() != null ? request.getContactNumber().replaceAll("[^0-9]", "") : "";
+
+            if (!reqPhone.isEmpty() && !reqPhone.endsWith(inputPhone) && !inputPhone.endsWith(reqPhone) &&
+                !contactPhone.isEmpty() && !contactPhone.endsWith(inputPhone) && !inputPhone.endsWith(contactPhone)) {
+                throw new UnauthorizedException("Phone number does not match the record for this Request ID.");
+            }
+        }
+
+        return mapToResponse(request);
     }
 
     /**
@@ -241,6 +277,27 @@ public class BloodRequestService {
     }
 
     /**
+     * Cancel a pending blood request (requester action).
+     */
+    @Transactional
+    public BloodRequestResponse cancelRequest(Long requestId, Long userId) {
+        BloodRequest request = bloodRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Blood request", "id", requestId));
+
+        if (!request.getRequester().getId().equals(userId)) {
+            throw new UnauthorizedException("You can only cancel your own blood requests");
+        }
+
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending requests can be cancelled");
+        }
+
+        request.setStatus(RequestStatus.CANCELLED);
+        BloodRequest updated = bloodRequestRepository.save(request);
+        return mapToResponse(updated);
+    }
+
+    /**
      * Get requests sent by the authenticated user.
      */
     public List<BloodRequestResponse> getMyRequests(Long userId) {
@@ -254,6 +311,17 @@ public class BloodRequestService {
     public List<BloodRequestResponse> getDonorRequests(Long userId) {
         return bloodRequestRepository.findByDonorUserIdOrderByCreatedAtDesc(userId)
                 .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    /**
+     * Get completed donation history for a donor.
+     */
+    public List<BloodRequestResponse> getDonorHistory(Long userId) {
+        return bloodRequestRepository.findByDonorUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .filter(r -> r.getStatus() == RequestStatus.COMPLETED || r.getStatus() == RequestStatus.ACCEPTED)
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -278,14 +346,22 @@ public class BloodRequestService {
     }
 
     private BloodRequestResponse mapToResponse(BloodRequest request) {
+        Long reqId = request.getRequester() != null ? request.getRequester().getId() : null;
+        String reqName = request.getRequesterName() != null ? request.getRequesterName() : (request.getRequester() != null ? request.getRequester().getName() : "Guest Seeker");
+        String reqEmail = request.getRequesterEmail() != null ? request.getRequesterEmail() : (request.getRequester() != null ? request.getRequester().getEmail() : "");
+        String reqPhone = request.getRequesterPhone() != null ? request.getRequesterPhone() : request.getContactNumber();
+        String code = request.getRequestCode() != null ? request.getRequestCode() : ("LL-REQ-" + request.getId());
+
         return BloodRequestResponse.builder()
                 .id(request.getId())
-                .requesterId(request.getRequester().getId())
-                .requesterName(request.getRequester().getName())
-                .requesterEmail(request.getRequester().getEmail())
-                .donorId(request.getDonor().getId())
-                .donorName(request.getDonor().getUser().getName())
-                .donorPhone(request.getDonor().getPhone())
+                .requestCode(code)
+                .requesterId(reqId)
+                .requesterName(reqName)
+                .requesterEmail(reqEmail)
+                .requesterPhone(reqPhone)
+                .donorId(request.getDonor() != null ? request.getDonor().getId() : null)
+                .donorName(request.getDonor() != null && request.getDonor().getUser() != null ? request.getDonor().getUser().getName() : "Available Donor")
+                .donorPhone(request.getDonor() != null ? request.getDonor().getPhone() : null)
                 .bloodGroup(request.getBloodGroup().getDisplayName())
                 .hospitalName(request.getHospitalName())
                 .city(request.getCity())

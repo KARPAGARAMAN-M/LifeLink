@@ -1,140 +1,130 @@
 import React, { useState, useEffect } from 'react';
-import { getUserProfile, updateUserProfile } from '../api/userApi';
-
-
-import { getMyDonorProfile, toggleAvailability } from '../api/donorApi';
 import { useAuth } from '../context/AuthContext';
-import { BloodGroupBadge, AvailabilityBadge } from '../components/common/Badge';
-import { CardSkeleton } from '../components/common/Skeleton';
-import Card, { CardHeader, CardBody, CardFooter } from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
+import api from '../api/axios';
 import {
   User,
   Mail,
-  Lock,
-  Calendar,
-  Droplet,
-  MapPin,
   Phone,
+  MapPin,
+  Building,
+  Calendar,
+  Heart,
+  Droplet,
   ShieldCheck,
-  Edit2,
-  CheckCircle2,
   ToggleLeft,
   ToggleRight,
+  CheckCircle2
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import Button from '../components/common/Button';
+import Input from '../components/common/Input';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 export default function Profile() {
-  const { user, updateUser } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const { user, isDonor, isSeeker, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [donorProfile, setDonorProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', currentPassword: '', newPassword: '' });
+  const [form, setForm] = useState({ name: '', phone: '', city: '', state: '' });
   const [saving, setSaving] = useState(false);
-  const [toggling, setToggling] = useState(false);
 
-  const loadProfile = async () => {
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    setLoading(true);
     try {
-      const res = await getUserProfile();
-      const p = res.data?.data;
-      setProfile(p);
-      setForm({ name: p?.name || '', currentPassword: '', newPassword: '' });
+      const res = await api.get('/users/me');
+      const u = res.data?.data;
+      setProfile(u);
+      setForm({
+        name: u?.name || '',
+        phone: u?.phone || '',
+        city: u?.city || '',
+        state: u?.state || '',
+      });
 
-      if (p?.isDonor) {
-        const donorRes = await getMyDonorProfile().catch(() => null);
+      if (isDonor) {
+        const donorRes = await api.get('/donors/my-profile').catch(() => null);
         if (donorRes?.data?.data) {
           setDonorProfile(donorRes.data.data);
         }
       }
     } catch (err) {
-      toast.error('Failed to load user profile');
+      console.error('Failed to load profile data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { name: form.name };
-      if (form.newPassword) {
-        payload.currentPassword = form.currentPassword;
-        payload.newPassword = form.newPassword;
-      }
-      const res = await updateUserProfile(payload);
+      const res = await api.put('/users/profile', form);
       const updated = res.data?.data;
       setProfile(updated);
       updateUser({ name: updated?.name });
       setEditing(false);
-      toast.success('Profile updated successfully');
+      alert('Profile updated successfully!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update profile');
+      alert(err.response?.data?.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleToggleAvailability = async () => {
-    setToggling(true);
     try {
-      const res = await toggleAvailability();
-      const newAvail = res.data?.data?.availability;
-      setDonorProfile((prev) => (prev ? { ...prev, availability: newAvail } : prev));
-      toast.success(`Availability ${newAvail ? 'enabled' : 'disabled'}`);
+      const res = await api.patch('/donors/availability');
+      setDonorProfile(res.data?.data || donorProfile);
     } catch (err) {
-      toast.error('Failed to update availability');
-    } finally {
-      setToggling(false);
+      alert('Failed to update availability.');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto py-10 px-4 space-y-6">
-        <CardSkeleton />
-        <CardSkeleton />
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner text="Loading profile details..." />;
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
+        
         {/* Header */}
         <div className="text-center max-w-xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 text-xs font-extrabold uppercase tracking-wider">
-            <User className="w-3.5 h-3.5" /> Account Center
+          <div className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+            isDonor ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-red-950 text-red-300 border border-red-800'
+          }`}>
+            {isDonor ? <Heart className="w-4 h-4 text-rose-500 fill-current" /> : <Droplet className="w-4 h-4 text-red-500 fill-current" />}
+            <span>{isDonor ? 'Blood Donor Profile' : 'Blood Seeker Profile'}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            User <span className="text-red-600 dark:text-red-500">Profile</span>
-          </h1>
+
+          <h1 className="text-3xl font-black text-white tracking-tight">Account Settings & Profile</h1>
+          <p className="text-xs text-slate-400">Manage your personal information and contact details.</p>
         </div>
 
-        {/* User Profile Card */}
-        <Card className="p-6 sm:p-8 border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
-          <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
+        {/* Profile Card */}
+        <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-8 shadow-2xl space-y-6">
+          <div className="flex items-center justify-between pb-6 border-b border-slate-800">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-700 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-red-600/30">
+              <div className={`w-16 h-16 rounded-2xl text-white font-black text-2xl flex items-center justify-center shadow-lg ${
+                isDonor ? 'bg-gradient-to-tr from-rose-600 to-red-600' : 'bg-gradient-to-tr from-red-600 to-amber-600'
+              }`}>
                 {profile?.name?.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">{profile?.name}</h2>
-                <p className="text-xs text-slate-500">{profile?.email}</p>
-                <span className="inline-block mt-1 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md">
-                  Role: {profile?.role}
+                <h2 className="text-xl font-black text-white">{profile?.name}</h2>
+                <p className="text-xs text-slate-400">{profile?.email}</p>
+                <span className={`inline-block mt-1 px-2.5 py-0.5 text-[10px] font-black uppercase rounded ${
+                  isDonor ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-red-950 text-red-300 border border-red-800'
+                }`}>
+                  ROLE: {profile?.role || user?.role}
                 </span>
               </div>
             </div>
 
             {!editing && (
-              <Button size="sm" variant="secondary" icon={Edit2} onClick={() => setEditing(true)}>
+              <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
                 Edit Profile
               </Button>
             )}
@@ -142,109 +132,113 @@ export default function Profile() {
 
           {editing ? (
             <form onSubmit={handleSaveProfile} className="space-y-4">
-              <Input
-                label="Full Name"
-                icon={User}
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
+              <div>
+                <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1">Full Name</label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                  className="bg-slate-950 border-slate-700 text-white"
+                />
+              </div>
 
-              <Input
-                label="Current Password (Required for password change)"
-                type="password"
-                icon={Lock}
-                placeholder="Enter current password"
-                value={form.currentPassword}
-                onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
-              />
+              <div>
+                <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1">Phone Number</label>
+                <Input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="bg-slate-950 border-slate-700 text-white"
+                />
+              </div>
 
-              <Input
-                label="New Password"
-                type="password"
-                icon={Lock}
-                placeholder="Enter new password (min 6 chars)"
-                value={form.newPassword}
-                onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1">City</label>
+                  <Input
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" onClick={() => setEditing(false)} isDisabled={saving}>
+                <div>
+                  <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1">State / Region</label>
+                  <Input
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    className="bg-slate-950 border-slate-700 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="ghost" type="button" onClick={() => setEditing(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary" isLoading={saving}>
+                <Button variant="danger" type="submit" loading={saving}>
                   Save Changes
                 </Button>
               </div>
             </form>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                <User className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span>Full Name: <strong>{profile?.name}</strong></span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-extrabold uppercase">Full Name</span>
+                <p className="text-sm font-bold text-white">{profile?.name}</p>
               </div>
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                <Mail className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span>Email: <strong>{profile?.email}</strong></span>
+
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-extrabold uppercase">Email Address</span>
+                <p className="text-sm font-bold text-white">{profile?.email}</p>
               </div>
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 sm:col-span-2">
-                <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <span>Account Created: <strong>{new Date(profile?.createdAt).toLocaleDateString()}</strong></span>
+
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-extrabold uppercase">Phone Number</span>
+                <p className="text-sm font-bold text-white">{profile?.phone || donorProfile?.phone || 'Not Provided'}</p>
               </div>
+
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-extrabold uppercase">Location</span>
+                <p className="text-sm font-bold text-white">
+                  {profile?.city || donorProfile?.city || 'Local'}, {profile?.state || donorProfile?.state || 'State'}
+                </p>
+              </div>
+
+              {/* Donor Specific Details */}
+              {isDonor && donorProfile && (
+                <>
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 font-extrabold uppercase">Blood Group</span>
+                    <p className="text-sm font-bold text-rose-400">{donorProfile.bloodGroup}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 font-extrabold uppercase">Date of Birth</span>
+                    <p className="text-sm font-bold text-white">{donorProfile.dob || 'Not Recorded'}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-slate-400 font-extrabold uppercase">Last Donation Date</span>
+                    <p className="text-sm font-bold text-white">{donorProfile.lastDonationDate || 'None'}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-slate-400 font-extrabold uppercase">Availability</span>
+                      <p className={`text-sm font-bold ${donorProfile.availability ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {donorProfile.availability ? '🟢 Available' : '🔴 Unavailable'}
+                      </p>
+                    </div>
+                    <button onClick={handleToggleAvailability} className="text-slate-400 hover:text-white">
+                      {donorProfile.availability ? <ToggleRight className="w-7 h-7 text-emerald-400" /> : <ToggleLeft className="w-7 h-7 text-slate-500" />}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
-        </Card>
+        </div>
 
-        {/* Registered Donor Profile Section */}
-        {donorProfile && (
-          <Card className="p-6 sm:p-8 border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
-            <CardHeader
-              title="Registered Donor Details"
-              subtitle="Your active blood donation profile specifications"
-              action={<BloodGroupBadge group={donorProfile.bloodGroup} size="md" />}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span>Location: <strong>{donorProfile.city}, {donorProfile.state}</strong></span>
-              </div>
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                <Phone className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span>Phone: <strong>{donorProfile.phone}</strong></span>
-              </div>
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 sm:col-span-2">
-                <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <span>
-                  Last Donation Date:{' '}
-                  <strong>
-                    {donorProfile.lastDonationDate
-                      ? new Date(donorProfile.lastDonationDate).toLocaleDateString()
-                      : 'N/A / First time'}
-                  </strong>
-                </span>
-              </div>
-            </div>
-
-            <CardFooter className="pt-2">
-              <div className="flex items-center gap-3">
-                <AvailabilityBadge available={donorProfile.availability} />
-                <span className="text-xs text-slate-500">
-                  {donorProfile.availability ? 'Receiving emergency match alerts' : 'Paused match requests'}
-                </span>
-              </div>
-
-              <button
-                onClick={handleToggleAvailability}
-                disabled={toggling}
-                className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
-              >
-                {donorProfile.availability ? <ToggleRight className="w-6 h-6 text-emerald-500" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
-                <span>Toggle Status</span>
-              </button>
-            </CardFooter>
-          </Card>
-        )}
       </div>
     </div>
   );

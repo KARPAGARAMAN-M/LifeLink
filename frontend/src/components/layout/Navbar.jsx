@@ -10,22 +10,22 @@ import {
   FileText,
   User,
   LogOut,
-  Shield,
   Sun,
   Moon,
   Menu,
   X,
   ChevronDown,
-  UserPlus,
-  PlusCircle,
-  HelpCircle,
+  AlertCircle,
+  Clock,
+  History,
   Activity,
+  SearchCode,
+  Droplet
 } from 'lucide-react';
 import Button from '../common/Button';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
-
   const { darkMode, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -57,268 +57,281 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const isActive = (path) => location.pathname === path;
+
+  // On Welcome page (/), hide global top navbar or render clean header
+  if (location.pathname === '/') return null;
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         scrolled
-          ? 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-md border-b border-slate-200/60 dark:border-slate-800/80 py-2.5'
-          : 'bg-transparent py-4'
+          ? 'bg-slate-900/95 backdrop-blur-xl shadow-md border-b border-slate-800 py-2.5'
+          : 'bg-slate-900/80 backdrop-blur-md border-b border-slate-800/60 py-3.5'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
+          
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 via-red-500 to-rose-700 text-white flex items-center justify-center shadow-lg shadow-red-600/30 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 via-rose-600 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-red-600/30 group-hover:scale-105 transition-transform">
               <Heart className="w-5 h-5 fill-current animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Life<span className="text-red-600 dark:text-red-500">Link</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black tracking-tight text-white">
+                  Life<span className="text-red-500">Link</span>
                 </span>
-                <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950/70 dark:text-red-300 rounded-md">
-                  Emergency
-                </span>
+                {isAuthenticated ? (
+                  <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md bg-rose-950 text-rose-300 border border-rose-800">
+                    🩸 Donor Portal
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md bg-red-950 text-red-300 border border-red-900">
+                    Emergency
+                  </span>
+                )}
               </div>
             </div>
           </Link>
 
-          {/* Desktop Links */}
-          <div className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/60 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/40">
-            <Link
-              to="/search"
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                isActive('/search')
-                  ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Search className="w-3.5 h-3.5" />
-              Find Blood
-            </Link>
-            <a
-              href="#how-it-works"
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-            >
-              How It Works
-            </a>
-            <Link
-              to="/donor-registration"
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                isActive('/donor-registration')
-                  ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Heart className="w-3.5 h-3.5 text-red-500" />
-              Become a Donor
-            </Link>
-            <a
-              href="#about"
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-            >
-              About
-            </a>
-
-            {isAuthenticated && (
+          {/* Desktop Navigation Links */}
+          <div className="hidden lg:flex items-center gap-1 bg-slate-800/60 p-1.5 rounded-2xl border border-slate-700/40">
+            {isAuthenticated ? (
+              /* ================= AUTHENTICATED DONOR NAV ================= */
               <>
                 <Link
-                  to="/dashboard"
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isActive('/dashboard')
-                      ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  to="/donor/dashboard"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/donor/dashboard')
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   Dashboard
                 </Link>
+
                 <Link
-                  to="/request-history"
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isActive('/request-history')
-                      ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  to="/donor/requests"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/donor/requests')
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Requests
+                  Blood Requests
+                </Link>
+
+                <Link
+                  to="/donor/availability"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/donor/availability')
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-emerald-400 hover:bg-emerald-950/40'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  My Availability
+                </Link>
+
+                <Link
+                  to="/donor/donation-history"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/donor/donation-history')
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Donation History
+                </Link>
+              </>
+            ) : (
+              /* ================= PUBLIC / SEEKER (NO AUTH) NAV ================= */
+              <>
+                <Link
+                  to="/find-blood"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/find-blood')
+                      ? 'bg-red-600 text-white shadow-sm font-black'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  Find Blood
+                </Link>
+
+                <Link
+                  to="/emergency-request"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/emergency-request')
+                      ? 'bg-red-600 text-white shadow-sm font-black'
+                      : 'text-red-400 hover:bg-red-950/40'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5 animate-bounce" />
+                  Emergency Request
+                </Link>
+
+                <Link
+                  to="/track-request"
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                    isActive('/track-request')
+                      ? 'bg-slate-700 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <SearchCode className="w-3.5 h-3.5 text-amber-400" />
+                  Track Request
                 </Link>
               </>
             )}
           </div>
 
-
-          {/* Right Action Icons & Primary CTAs */}
+          {/* Right Action CTAs */}
           <div className="hidden lg:flex items-center gap-2.5">
-            {/* Theme Switcher */}
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors focus:outline-none"
+              className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
               aria-label="Toggle theme"
             >
-              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
             </button>
 
-            {/* Notification Bell */}
+            {/* Notification Bell for Donors */}
             {isAuthenticated && <NotificationBell />}
 
-            {/* Primary & Secondary Emergency CTAs */}
-            <Link to="/search">
-              <Button size="sm" variant="danger" icon={Search} className="font-black shadow-lg shadow-red-600/30">
-                Find Blood Near Me
-              </Button>
-            </Link>
-
             {isAuthenticated ? (
+              /* Authenticated Donor Dropdown */
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 p-1.5 pl-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200/80 dark:border-slate-700"
+                  className="flex items-center gap-2 p-1.5 pl-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-700"
                 >
-                  <div className="w-6 h-6 rounded-lg bg-red-600 text-white font-bold text-xs flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-rose-600 text-white font-bold text-xs flex items-center justify-center">
                     {user?.name?.charAt(0).toUpperCase()}
                   </div>
+                  <span className="text-xs font-extrabold text-white max-w-[100px] truncate">
+                    {user?.name?.split(' ')[0]}
+                  </span>
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50 animate-fadeIn">
-                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-1">
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{user?.name}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{user?.email}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 p-2 z-50 animate-fadeIn">
+                    <div className="px-3 py-2 border-b border-slate-800 mb-1">
+                      <p className="text-xs font-bold text-white">{user?.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                      <span className="inline-block mt-1 px-1.5 py-0.5 text-[9px] font-black uppercase rounded bg-rose-950 text-rose-300 border border-rose-800">
+                        Blood Donor Account
+                      </span>
                     </div>
 
                     <Link
-                      to="/profile"
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      to="/donor/profile"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800"
                     >
                       <User className="w-3.5 h-3.5 text-slate-400" />
-                      My Profile
-                    </Link>
-                    <Link
-                      to="/donor-registration"
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    >
-                      <UserPlus className="w-3.5 h-3.5 text-slate-400" />
                       Donor Profile
                     </Link>
 
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors mt-1"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:bg-red-950/30 transition-colors mt-1"
                     >
                       <LogOut className="w-3.5 h-3.5" />
-                      Logout
+                      Sign Out
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <Link
-                to="/login"
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
-                  isActive('/login')
-                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30 font-black'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'
-                }`}
-              >
-                Donor Login
-              </Link>
+              /* Public Seeker & Donor Buttons */
+              <div className="flex items-center gap-2">
+                <Link to="/find-blood">
+                  <Button size="sm" variant="danger" icon={Search} className="font-black shadow-lg shadow-red-600/30">
+                    Find Blood Near Me
+                  </Button>
+                </Link>
+
+                <Link to="/donor/login">
+                  <Button size="sm" variant="secondary" icon={Heart} className="font-extrabold bg-slate-800 hover:bg-slate-700 text-rose-400 border border-rose-900/60">
+                    Donor Login
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
 
-
-          {/* Mobile Header Buttons */}
+          {/* Mobile Buttons */}
           <div className="flex items-center gap-2 lg:hidden">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              className="p-2 rounded-xl bg-slate-800 text-slate-300"
             >
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
             </button>
             {isAuthenticated && <NotificationBell />}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              className="p-2 rounded-xl bg-slate-800 text-slate-300"
             >
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
+
         </div>
       </div>
 
       {/* Mobile Drawer Menu */}
       {isOpen && (
-        <div className="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 pt-3 pb-6 space-y-3 mt-2 shadow-2xl animate-fadeIn">
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <Heart className="w-4 h-4 text-red-500" /> Home
-          </Link>
-          <Link
-            to="/search"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <Search className="w-4 h-4 text-red-500" /> Find Donors
-          </Link>
-
+        <div className="lg:hidden bg-slate-900 border-b border-slate-800 px-4 pt-3 pb-6 space-y-3 mt-2 shadow-2xl animate-fadeIn">
           {isAuthenticated ? (
+            /* Mobile Donor Options */
             <>
-              <Link
-                to="/dashboard"
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <LayoutDashboard className="w-4 h-4 text-red-500" /> Dashboard
+              <Link to="/donor/dashboard" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800">
+                <LayoutDashboard className="w-4 h-4 text-rose-500" /> Dashboard
               </Link>
-              <Link
-                to="/request-history"
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <FileText className="w-4 h-4 text-red-500" /> My Requests
+              <Link to="/donor/requests" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800">
+                <FileText className="w-4 h-4 text-rose-500" /> Blood Requests
               </Link>
-              <Link
-                to="/profile"
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <User className="w-4 h-4 text-red-500" /> My Profile
+              <Link to="/donor/availability" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-emerald-400 bg-emerald-950/30">
+                <Activity className="w-4 h-4 text-emerald-500" /> My Availability
               </Link>
-
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
-                <Link to="/request-blood">
-                  <Button variant="danger" className="w-full justify-center">
-                    Request Emergency Blood
-                  </Button>
-                </Link>
-                <Button variant="ghost" onClick={handleLogout} className="w-full justify-center text-red-600">
-                  Logout
+              <Link to="/donor/donation-history" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800">
+                <History className="w-4 h-4 text-rose-500" /> Donation History
+              </Link>
+              <Link to="/donor/profile" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-200 hover:bg-slate-800">
+                <User className="w-4 h-4 text-rose-500" /> Donor Profile
+              </Link>
+              <div className="pt-2 border-t border-slate-800">
+                <Button variant="ghost" onClick={handleLogout} className="w-full justify-center text-red-400">
+                  Sign Out
                 </Button>
               </div>
             </>
           ) : (
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
-              <Link to="/request-blood">
-                <Button variant="danger" className="w-full justify-center">
-                  Request Emergency Blood
-                </Button>
+            /* Mobile Public Options */
+            <div className="space-y-2 pt-2">
+              <Link to="/find-blood" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600">
+                <Search className="w-4 h-4" /> Find Blood Near You
               </Link>
-              <div className="grid grid-cols-2 gap-2">
-                <Link to="/login">
-                  <Button variant="secondary" className="w-full justify-center">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link to="/register">
-                  <Button variant="primary" className="w-full justify-center">
-                    Join LifeLink
-                  </Button>
+              <Link to="/emergency-request" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-red-400 bg-red-950/60 border border-red-800">
+                <AlertCircle className="w-4 h-4 text-red-500" /> Emergency Request
+              </Link>
+              <Link to="/track-request" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-amber-400 bg-slate-800">
+                <SearchCode className="w-4 h-4 text-amber-400" /> Track Request Status
+              </Link>
+              <div className="pt-2 border-t border-slate-800">
+                <Link to="/donor/login" className="block w-full text-center py-2.5 rounded-xl bg-slate-800 text-rose-400 font-bold border border-rose-900/60">
+                  Donor Login / Registration
                 </Link>
               </div>
             </div>

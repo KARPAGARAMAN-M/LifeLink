@@ -38,6 +38,17 @@ public class BloodRequestController {
     }
 
     /**
+     * Create a blood request without login (public guest seeker).
+     */
+    @PostMapping("/public")
+    public ResponseEntity<ApiResponse<BloodRequestResponse>> createPublicRequest(
+            @Valid @RequestBody EmergencyRequestDto dto) {
+        BloodRequestResponse response = bloodRequestService.createEmergencyGuestRequest(dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Blood request created successfully", response));
+    }
+
+    /**
      * Create an emergency blood request without login (guest seeker).
      */
     @PostMapping("/emergency")
@@ -46,6 +57,17 @@ public class BloodRequestController {
         BloodRequestResponse response = bloodRequestService.createEmergencyGuestRequest(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Emergency blood request dispatched successfully", response));
+    }
+
+    /**
+     * Track a blood request status using Request Code (LL-REQ-XXXXX) and phone number.
+     */
+    @PostMapping("/track")
+    public ResponseEntity<ApiResponse<BloodRequestResponse>> trackRequest(
+            @RequestParam String requestCode,
+            @RequestParam(required = false) String phone) {
+        BloodRequestResponse response = bloodRequestService.trackRequest(requestCode, phone);
+        return ResponseEntity.ok(ApiResponse.success("Request status retrieved", response));
     }
 
     /**
@@ -82,6 +104,17 @@ public class BloodRequestController {
     }
 
     /**
+     * Cancel a pending blood request (requester action).
+     */
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<BloodRequestResponse>> cancelRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        BloodRequestResponse response = bloodRequestService.cancelRequest(id, user.getId());
+        return ResponseEntity.ok(ApiResponse.success("Blood request cancelled", response));
+    }
+
+    /**
      * Get requests sent by the authenticated user.
      */
     @GetMapping("/my-requests")
@@ -99,5 +132,15 @@ public class BloodRequestController {
             @AuthenticationPrincipal User user) {
         List<BloodRequestResponse> requests = bloodRequestService.getDonorRequests(user.getId());
         return ResponseEntity.ok(ApiResponse.success("Donor requests retrieved", requests));
+    }
+
+    /**
+     * Get completed donation history for authenticated donor.
+     */
+    @GetMapping("/donor-history")
+    public ResponseEntity<ApiResponse<List<BloodRequestResponse>>> getDonorHistory(
+            @AuthenticationPrincipal User user) {
+        List<BloodRequestResponse> requests = bloodRequestService.getDonorHistory(user.getId());
+        return ResponseEntity.ok(ApiResponse.success("Donor history retrieved", requests));
     }
 }

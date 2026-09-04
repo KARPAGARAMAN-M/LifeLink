@@ -28,9 +28,21 @@ public class BloodRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "request_code", length = 30)
+    private String requestCode;
+
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "requester_id", nullable = false)
+    @JoinColumn(name = "requester_id", nullable = true)
     private User requester;
+
+    @Column(name = "requester_name", length = 100)
+    private String requesterName;
+
+    @Column(name = "requester_phone", length = 20)
+    private String requesterPhone;
+
+    @Column(name = "requester_email", length = 100)
+    private String requesterEmail;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "donor_id", nullable = false)

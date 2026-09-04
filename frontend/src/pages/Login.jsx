@@ -104,21 +104,21 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} autoComplete="off" className="space-y-5">
             <Input
-              id="ll-donor-login-identifier"
-              name="ll_donor_account_id"
+              id="login-email"
+              name="email"
               label="Email / Phone *"
               type="text"
               icon={Mail}
               placeholder="Enter your registered email or phone number"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="off"
+              autoComplete="username"
               required
             />
 
             <Input
-              id="ll-donor-login-secret"
-              name="ll_donor_account_secret"
+              id="login-password"
+              name="password"
               label="Password *"
               type="password"
               icon={Lock}

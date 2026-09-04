@@ -90,10 +90,6 @@ export default function SearchDonors() {
     }
   };
 
-  useEffect(() => {
-    fetchDonors(filters);
-  }, [geo.latitude, geo.longitude]);
-
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchDonors(filters);

@@ -18,6 +18,8 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, Long
 
     List<BloodRequest> findByStatusOrderByCreatedAtDesc(RequestStatus status);
 
+    java.util.Optional<BloodRequest> findByRequestCode(String requestCode);
+
     long countByStatus(RequestStatus status);
 
     List<BloodRequest> findAllByOrderByCreatedAtDesc();

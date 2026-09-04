@@ -1,8 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Heart, PhoneCall, ShieldCheck, Mail, MapPin, ExternalLink } from 'lucide-react';
 
 export default function Footer() {
+  const location = useLocation();
+  if (location.pathname === '/') return null;
+
   return (
     <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 pt-16 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,26 +34,36 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-100 mb-4">Platform</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-100 mb-4">Quick Links</h4>
             <ul className="space-y-2.5 text-xs">
               <li>
                 <Link to="/" className="hover:text-red-400 transition-colors">
-                  Home Overview
+                  LifeLink
                 </Link>
+              </li>
+              <li>
+                <a href="#about" className="hover:text-red-400 transition-colors">
+                  About
+                </a>
+              </li>
+              <li>
+                <a href="#how-it-works" className="hover:text-red-400 transition-colors">
+                  How It Works
+                </a>
               </li>
               <li>
                 <Link to="/search" className="hover:text-red-400 transition-colors">
-                  Find Blood Donors
-                </Link>
-              </li>
-              <li>
-                <Link to="/request-blood" className="hover:text-red-400 transition-colors">
-                  Submit Emergency Request
+                  Find Blood
                 </Link>
               </li>
               <li>
                 <Link to="/donor-registration" className="hover:text-red-400 transition-colors">
                   Become a Donor
+                </Link>
+              </li>
+              <li>
+                <Link to="/login" className="hover:text-red-400 transition-colors">
+                  Donor Login
                 </Link>
               </li>
             </ul>

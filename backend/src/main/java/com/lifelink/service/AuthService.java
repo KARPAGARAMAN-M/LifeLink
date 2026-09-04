@@ -43,11 +43,21 @@ public class AuthService {
         }
 
         // Build and save user
+        Role userRole = Role.SEEKER;
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            try {
+                userRole = Role.valueOf(request.getRole().trim().toUpperCase());
+            } catch (Exception ignored) {}
+        }
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
+                .phone(request.getPhone())
+                .city(request.getCity())
+                .state(request.getState())
+                .role(userRole)
                 .isBlocked(false)
                 .build();
 

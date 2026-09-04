@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/donors/register").permitAll()
                         .requestMatchers("/api/donors/{id}").permitAll()
                         .requestMatchers("/api/requests/emergency").permitAll()
+                        .requestMatchers("/api/requests/public").permitAll()
+                        .requestMatchers("/api/requests/track").permitAll()
                         // All other endpoints require donor authentication
                         .anyRequest().authenticated()
 
